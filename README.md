@@ -124,12 +124,17 @@ npm run build && npm run preview
 - 开发环境：`/admin/` 可操作，读取/保存 `site/shell/home/page/ui` 五组配置
 - 生产环境：`/admin/` 仅显示只读提示页，不提供可写操作
 - 保存接口：`POST /api/admin/settings/`（仅 `DEV` 可写，`PROD` 固定 `404`）
+- 运行策略：`astro.config.mjs` 在开发态使用 `server` output，让 `/api/admin/settings/` 可以处理 `POST`；构建阶段回到 `static`，继续输出纯静态产物
 - 落盘文件：`src/data/settings/site.json`、`src/data/settings/shell.json`、`src/data/settings/home.json`、`src/data/settings/page.json`、`src/data/settings/ui.json`
-- 当前已开放字段：基础站点信息、`shell.brandTitle`、`shell.quote`、`shell.nav`、`home.introLead`、`home.introMore`、`home.heroPresetId`、`page.*.subtitle`、`page.bits.defaultAuthor`、`ui.codeBlock.showLineNumbers`、`ui.readingMode.showEntry`
-- Phase 1.5：已完成 M1 `site.footer.copyright` / `site.socialLinks`（`github` / `x` / `email` / `rss`）、M2 `home.introLead` / `home.introMore`、M3 `page.*.subtitle` 与 `page.bits.defaultAuthor`
+- 当前已开放字段：基础站点信息、`site.footer.startYear`、`site.footer.showCurrentYear`、`site.footer.copyright`、`site.socialLinks.github|x|email|presetOrder|custom[]`、`shell.brandTitle`、`shell.quote`、`shell.nav`、`home.introLead`、`home.introMore`、`home.heroPresetId`、`page.*.subtitle`、`page.bits.defaultAuthor`、`ui.codeBlock.showLineNumbers`、`ui.readingMode.showEntry`
+- Phase 1.5：已完成 M1 `site.footer` / `site.socialLinks` 扩展、M2 `home.introLead` / `home.introMore`、M3 `page.*.subtitle` 与 `page.bits.defaultAuthor`、M4 about 页统一社交渲染、M5 `/admin` 自定义社交链接编辑 UI
+- `site.socialLinks` 当前支持固定字段 `github` / `x` / `email`、固定平台排序 `presetOrder.{github|x|email}`，以及 `custom[]`；`custom[]` 每项固定为 `id / label / href / iconKey / visible / order`
+- `custom[]` 最多 `8` 条，`href` 仅允许 `https://`，`iconKey` 仅允许 `github / x / email / weibo / facebook / instagram / telegram / mastodon / bilibili / youtube / linkedin / website / link / globe`
+- 固定平台与扩展链接在 `/admin` 中共用同一张排序表；固定平台不可删除，但可编辑链接值和位置排序，留空即隐藏
+- 运行时会在 `src/lib/theme-settings.ts` 统一生成只读的 `resolvedSocialItems`，供 `about` 等前台页面消费；固定平台会先按 `presetOrder` 参与排序，再与 `custom[]` 一起合并；该字段不会回写到保存请求
 - 首页导语补充文案后方仍固定渲染 `归档` / `随笔` 链接，后台只改文案本身
 - 固定页 subtitle 只控制静态说明文案；`essay` / `archive` 的动态计数、分页与 RSS 入口仍由前台固定输出；`memo` 留空时回退 frontmatter
-- 白名单约束：仅允许受控字段；`rss` 固定指向站内 `/rss.xml`，不接受手填外链；Sidebar 仍只允许编辑既有导航项
+- 白名单约束：仅允许受控字段；`site.socialLinks.custom[]` 不开放原始 SVG / HTML，自定义社交项只允许受控图标键与受控字段；Sidebar 仍只允许编辑既有导航项
 
 兼容迁移（面向已有 fork）：
 

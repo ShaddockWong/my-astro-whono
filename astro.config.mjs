@@ -111,6 +111,8 @@ const sanitizeSchema = {
 export default defineConfig({
   // Required for RSS generation. Prefer SITE_URL; fallback keeps build passing.
   site: site.url,
+  // DEV 使用 server output 允许 /api/admin/settings 处理 POST；构建阶段回到 static 保持纯静态产物。
+  output: process.env.NODE_ENV === 'production' ? 'static' : 'server',
   integrations: hasSiteUrl ? [sitemap({ filter: (page) => !isAdminSitemapEntry(page) })] : [],
   trailingSlash: 'always',
   build: {

@@ -1,0 +1,21 @@
+{
+  "essay": {
+    "subtitle": "随笔与杂记"
+  },
+  "archive": {
+    "subtitle": "按年份分组的归档目录"
+  },
+  "bits": {
+    "subtitle": "生活不只是长篇",
+    "defaultAuthor": {
+      "name": "Whono",
+      "avatar": "author/avatar.webp"
+    }
+  },
+  "memo": {
+    "subtitle": null
+  },
+  "about": {
+    "subtitle": null
+  }
+}

@@ -20,6 +20,8 @@ const brandTitle = settings.shell.brandTitle ?? siteTitle;
 const metaDescription = description ?? settings.site.description;
 const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
 const htmlLang = settings.site.defaultLocale || 'zh-CN';
+const footerStartYear = settings.site.footer.startYear;
+const footerShowCurrentYear = settings.site.footer.showCurrentYear;
 const footerCopyright = settings.site.footer.copyright;
 const showCodeLineNumbers = settings.ui.codeBlock.showLineNumbers;
 const canonical = (hasSiteUrl && Astro.site)
@@ -28,9 +30,10 @@ const canonical = (hasSiteUrl && Astro.site)
 const ogImage = image
   ? ((hasSiteUrl && Astro.site) ? new URL(image, Astro.site).toString() : image)
   : null;
-const startYear = 2025;
 const currentYear = new Date().getFullYear();
-const yearRange = currentYear > startYear ? `${startYear}-${currentYear}` : `${startYear}`;
+const yearRange = footerShowCurrentYear && currentYear > footerStartYear
+  ? `${footerStartYear}-${currentYear}`
+  : `${footerStartYear}`;
 const base = import.meta.env.BASE_URL ?? '/';
 const withBase = createWithBase(base);
 ---

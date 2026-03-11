@@ -7,11 +7,10 @@ import {
   type HeroPresetId,
   type PageId,
   type SidebarNavId,
+  type SiteSocialCustomItem,
+  type SiteSocialIconKey,
   type ThemeSettings
 } from '../../../lib/theme-settings';
-
-// DEV 需要动态 POST；PROD 构建保持静态输出，避免静态站额外依赖 adapter。
-export const prerender = import.meta.env.PROD;
 
 type WritableGroup = 'site' | 'shell' | 'home' | 'page' | 'ui';
 
@@ -40,20 +39,41 @@ const GITHUB_HOSTS = ['github.com'];
 const X_HOSTS = ['x.com', 'twitter.com'];
 const HOME_INTRO_MAX_LENGTH = 240;
 const PAGE_SUBTITLE_MAX_LENGTH = 120;
+const FOOTER_START_YEAR_MIN = 1900;
+const FOOTER_START_YEAR_MAX = new Date().getFullYear();
 
 const SITE_KEYS = ['title', 'description', 'defaultLocale', 'footer', 'socialLinks'] as const;
 const SHELL_KEYS = ['brandTitle', 'quote', 'nav'] as const;
 const HOME_KEYS = ['introLead', 'introMore', 'heroPresetId'] as const;
 const PAGE_KEYS = ['essay', 'archive', 'bits', 'memo', 'about'] as const;
 const UI_KEYS = ['codeBlock', 'readingMode'] as const;
-const FOOTER_KEYS = ['copyright'] as const;
-const SOCIAL_LINK_KEYS = ['github', 'x', 'email', 'rss'] as const;
+const FOOTER_KEYS = ['startYear', 'showCurrentYear', 'copyright'] as const;
+const SOCIAL_LINK_KEYS = ['github', 'x', 'email', 'presetOrder', 'custom'] as const;
+const SOCIAL_PRESET_ORDER_KEYS = ['github', 'x', 'email'] as const;
+const SOCIAL_CUSTOM_ITEM_KEYS = ['id', 'label', 'href', 'iconKey', 'visible', 'order'] as const;
 const CODE_BLOCK_KEYS = ['showLineNumbers'] as const;
 const READING_MODE_KEYS = ['showEntry'] as const;
 const NAV_ITEM_KEYS = ['id', 'label', 'visible', 'order'] as const;
 const PAGE_ITEM_KEYS = ['subtitle'] as const;
 const BITS_PAGE_KEYS = ['subtitle', 'defaultAuthor'] as const;
 const DEFAULT_AUTHOR_KEYS = ['name', 'avatar'] as const;
+const SOCIAL_ICON_KEYS: ReadonlySet<SiteSocialIconKey> = new Set([
+  'github',
+  'x',
+  'email',
+  'weibo',
+  'facebook',
+  'instagram',
+  'telegram',
+  'mastodon',
+  'bilibili',
+  'youtube',
+  'linkedin',
+  'website',
+  'link',
+  'globe'
+]);
+const SOCIAL_CUSTOM_LIMIT = 8;
 
 const JSON_HEADERS = {
   'content-type': 'application/json; charset=utf-8',
@@ -95,7 +115,7 @@ const collectUnknownKeys = (
   }
 };
 
-const toHttpsUrl = (value: unknown, allowedHosts: readonly string[]): string | null | undefined => {
+const toHttpsUrl = (value: unknown, allowedHosts?: readonly string[]): string | null | undefined => {
   if (value === null) return null;
   if (typeof value !== 'string') return undefined;
 
@@ -106,11 +126,13 @@ const toHttpsUrl = (value: unknown, allowedHosts: readonly string[]): string | n
     const parsed = new URL(trimmed);
     if (parsed.protocol !== 'https:') return undefined;
 
-    const hostname = parsed.hostname.toLowerCase();
-    const isAllowed = allowedHosts.some(
-      (host) => hostname === host || hostname === `www.${host}` || hostname.endsWith(`.${host}`)
-    );
-    if (!isAllowed) return undefined;
+    if (allowedHosts?.length) {
+      const hostname = parsed.hostname.toLowerCase();
+      const isAllowed = allowedHosts.some(
+        (host) => hostname === host || hostname === `www.${host}` || hostname.endsWith(`.${host}`)
+      );
+      if (!isAllowed) return undefined;
+    }
 
     return parsed.toString();
   } catch {
@@ -138,6 +160,71 @@ const validateRelativeAvatarPath = (scope: string, value: string, errors: string
     errors.push(`${scope} 当前仅允许相对路径，不允许 URL`);
   }
 };
+
+const parseSocialCustomItem = (
+  value: unknown,
+  errors: string[],
+  index: number
+): SiteSocialCustomItem | null => {
+  const scope = `site.socialLinks.custom[${index}]`;
+  if (!isRecord(value)) {
+    errors.push(`${scope} 必须是对象`);
+    return null;
+  }
+
+  collectUnknownKeys(scope, value, SOCIAL_CUSTOM_ITEM_KEYS, errors);
+
+  const id = toTrimmedString(value.id);
+  if (!id) errors.push(`${scope}.id 不能为空`);
+
+  const label = toTrimmedString(value.label);
+  if (!label) {
+    errors.push(`${scope}.label 不能为空`);
+  } else if (label.includes('\n') || label.includes('\r')) {
+    errors.push(`${scope}.label 只允许单行文本`);
+  }
+
+  const href = toHttpsUrl(value.href);
+  if (!href) errors.push(`${scope}.href 必须是合法 https:// 链接`);
+
+  const iconKeyRaw = toTrimmedString(value.iconKey);
+  if (!iconKeyRaw || !SOCIAL_ICON_KEYS.has(iconKeyRaw as SiteSocialIconKey)) {
+    errors.push(`${scope}.iconKey 必须来自白名单`);
+  }
+
+  const visible = toBoolean(value.visible);
+  if (visible === undefined) errors.push(`${scope}.visible 必须是布尔值`);
+
+  const order = toInteger(value.order);
+  if (order === undefined) errors.push(`${scope}.order 必须是整数`);
+
+  if (!id || !label || !href || !iconKeyRaw || visible === undefined || order === undefined) {
+    return null;
+  }
+
+  return {
+    id,
+    label,
+    href,
+    iconKey: iconKeyRaw as SiteSocialIconKey,
+    visible,
+    order
+  };
+};
+
+const toWritableSiteSettings = (site: ThemeSettings['site']) => ({
+  title: site.title,
+  description: site.description,
+  defaultLocale: site.defaultLocale,
+  footer: { ...site.footer },
+  socialLinks: {
+    github: site.socialLinks.github,
+    x: site.socialLinks.x,
+    email: site.socialLinks.email,
+    presetOrder: { ...site.socialLinks.presetOrder },
+    custom: site.socialLinks.custom.map((item) => ({ ...item }))
+  }
+});
 
 const parseNavItem = (value: unknown, errors: string[], index: number): NavInputItem | null => {
   if (!isRecord(value)) {
@@ -261,6 +348,24 @@ const parsePatch = (
           errors.push('site.footer 必须是对象');
         } else {
           collectUnknownKeys('site.footer', rawFooter, FOOTER_KEYS, errors);
+          if (Object.prototype.hasOwnProperty.call(rawFooter, 'startYear')) {
+            const value = toInteger(rawFooter.startYear);
+            if (value === undefined) {
+              errors.push('site.footer.startYear 必须是整数');
+            } else if (value < FOOTER_START_YEAR_MIN || value > FOOTER_START_YEAR_MAX) {
+              errors.push(`site.footer.startYear 必须在 ${FOOTER_START_YEAR_MIN}-${FOOTER_START_YEAR_MAX} 之间`);
+            } else {
+              nextSite.footer.startYear = value;
+            }
+          }
+          if (Object.prototype.hasOwnProperty.call(rawFooter, 'showCurrentYear')) {
+            const value = toBoolean(rawFooter.showCurrentYear);
+            if (value === undefined) {
+              errors.push('site.footer.showCurrentYear 必须是布尔值');
+            } else {
+              nextSite.footer.showCurrentYear = value;
+            }
+          }
           if (Object.prototype.hasOwnProperty.call(rawFooter, 'copyright')) {
             const value = toTrimmedString(rawFooter.copyright);
             if (!value) {
@@ -305,12 +410,69 @@ const parsePatch = (
               nextSite.socialLinks.email = value;
             }
           }
-          if (Object.prototype.hasOwnProperty.call(rawSocialLinks, 'rss')) {
-            const value = toBoolean(rawSocialLinks.rss);
-            if (value === undefined) {
-              errors.push('site.socialLinks.rss 必须是布尔值');
+          if (Object.prototype.hasOwnProperty.call(rawSocialLinks, 'presetOrder')) {
+            const rawPresetOrder = rawSocialLinks.presetOrder;
+            if (!isRecord(rawPresetOrder)) {
+              errors.push('site.socialLinks.presetOrder 必须是对象');
             } else {
-              nextSite.socialLinks.rss = value;
+              const presetErrorsBefore = errors.length;
+              collectUnknownKeys('site.socialLinks.presetOrder', rawPresetOrder, SOCIAL_PRESET_ORDER_KEYS, errors);
+
+              const nextPresetOrder = { ...nextSite.socialLinks.presetOrder };
+              for (const key of SOCIAL_PRESET_ORDER_KEYS) {
+                if (!Object.prototype.hasOwnProperty.call(rawPresetOrder, key)) continue;
+                const value = toInteger(rawPresetOrder[key]);
+                if (value === undefined || value < 1 || value > 999) {
+                  errors.push(`site.socialLinks.presetOrder.${key} 必须是 1-999 的整数`);
+                } else {
+                  nextPresetOrder[key] = value;
+                }
+              }
+
+              const seenPresetOrders = new Set<number>();
+              for (const key of SOCIAL_PRESET_ORDER_KEYS) {
+                const order = nextPresetOrder[key];
+                if (seenPresetOrders.has(order)) {
+                  errors.push(`site.socialLinks.presetOrder 出现重复排序值：${order}`);
+                }
+                seenPresetOrders.add(order);
+              }
+
+              if (errors.length === presetErrorsBefore) {
+                nextSite.socialLinks.presetOrder = nextPresetOrder;
+              }
+            }
+          }
+          if (Object.prototype.hasOwnProperty.call(rawSocialLinks, 'custom')) {
+            const rawCustom = rawSocialLinks.custom;
+            if (!Array.isArray(rawCustom)) {
+              errors.push('site.socialLinks.custom 必须是数组');
+            } else {
+              const customErrorsBefore = errors.length;
+              if (rawCustom.length > SOCIAL_CUSTOM_LIMIT) {
+                errors.push(`site.socialLinks.custom 最多允许 ${SOCIAL_CUSTOM_LIMIT} 项`);
+              }
+
+              const parsedCustom = rawCustom
+                .map((item, index) => parseSocialCustomItem(item, errors, index))
+                .filter((item): item is SiteSocialCustomItem => item !== null);
+
+              const seenIds = new Set<string>();
+              const seenOrders = new Set<number>();
+              for (const item of parsedCustom) {
+                if (seenIds.has(item.id)) {
+                  errors.push(`site.socialLinks.custom.id 重复：${item.id}`);
+                }
+                if (seenOrders.has(item.order)) {
+                  errors.push(`site.socialLinks.custom.order 重复：${item.order}`);
+                }
+                seenIds.add(item.id);
+                seenOrders.add(item.order);
+              }
+
+              if (errors.length === customErrorsBefore) {
+                nextSite.socialLinks.custom = parsedCustom.sort((a, b) => a.order - b.order);
+              }
             }
           }
         }
@@ -567,25 +729,25 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   let body: unknown;
-  try {
-    body = await request.clone().json();
-  } catch {
-    const rawBody = await request.clone().text();
-    const trimmedBody = rawBody.trim();
-    if (!trimmedBody) {
-      return new Response(
-        JSON.stringify(
-          {
-            ok: false,
-            errors: ['请求体为空，请确认前端请求地址未发生重定向且已发送 JSON 字符串']
-          },
-          null,
-          2
-        ),
-        { status: 400, headers: JSON_HEADERS }
-      );
-    }
+  const rawBody = await request.text();
+  const trimmedBody = rawBody.trim();
+  if (!trimmedBody) {
+    return new Response(
+      JSON.stringify(
+        {
+          ok: false,
+          errors: ['请求体为空，请确认前端请求地址未发生重定向且已发送 JSON 字符串']
+        },
+        null,
+        2
+      ),
+      { status: 400, headers: JSON_HEADERS }
+    );
+  }
 
+  try {
+    body = JSON.parse(trimmedBody);
+  } catch {
     return new Response(
       JSON.stringify({ ok: false, errors: ['请求体不是合法 JSON'] }, null, 2),
       { status: 400, headers: JSON_HEADERS }
@@ -614,7 +776,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   try {
     if (patch.site && results.site.received) {
-      await writeJsonAtomic(SETTINGS_FILES.site, patch.site);
+      await writeJsonAtomic(SETTINGS_FILES.site, toWritableSiteSettings(patch.site));
       results.site.written = true;
     }
     if (patch.shell && results.shell.received) {

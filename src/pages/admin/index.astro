@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getThemeSettings, type SidebarNavId } from '../../lib/theme-settings';
+import Icon from '../../components/Icon.astro';
+import { getThemeSettings, type SidebarNavId, type SiteSocialIconKey, type SiteSocialPresetId } from '../../lib/theme-settings';
 import { createWithBase } from '../../utils/format';
 
 const isDev = import.meta.env.DEV;
@@ -18,6 +19,65 @@ const navLabelFallback: Record<SidebarNavId, string> = {
 };
 const homeIntroMaxLength = 240;
 const pageSubtitleMaxLength = 120;
+const footerStartYearMin = 1900;
+const footerStartYearMax = new Date().getFullYear();
+const socialCustomLimit = 8;
+const defaultCustomSocialIconKey: SiteSocialIconKey = 'website';
+const socialIconOptions: readonly {
+  value: SiteSocialIconKey;
+  optionLabel: string;
+  savedLabel: string;
+}[] = [
+  { value: 'github', optionLabel: 'GitHub', savedLabel: 'GitHub' },
+  { value: 'x', optionLabel: 'X', savedLabel: 'X' },
+  { value: 'email', optionLabel: 'Email', savedLabel: 'Email' },
+  { value: 'weibo', optionLabel: '微博', savedLabel: '微博' },
+  { value: 'facebook', optionLabel: 'Facebook', savedLabel: 'Facebook' },
+  { value: 'instagram', optionLabel: 'Instagram', savedLabel: 'Instagram' },
+  { value: 'telegram', optionLabel: 'Telegram', savedLabel: 'Telegram' },
+  { value: 'mastodon', optionLabel: 'Mastodon', savedLabel: 'Mastodon' },
+  { value: 'bilibili', optionLabel: 'Bilibili', savedLabel: 'Bilibili' },
+  { value: 'youtube', optionLabel: 'YouTube', savedLabel: 'YouTube' },
+  { value: 'linkedin', optionLabel: 'LinkedIn', savedLabel: 'LinkedIn' },
+  { value: 'website', optionLabel: '网站', savedLabel: '网站' },
+  { value: 'link', optionLabel: '链接', savedLabel: '链接' },
+  { value: 'globe', optionLabel: '站点', savedLabel: '站点' }
+];
+const customSocialIconOptions = socialIconOptions.filter(
+  (option) => option.value !== 'github' && option.value !== 'x' && option.value !== 'email'
+);
+const socialPresetRows = [
+  {
+    id: 'github' as SiteSocialPresetId,
+    label: 'GitHub',
+    orderInputId: 'site-social-github-order',
+    inputId: 'site-social-github',
+    inputType: 'url',
+    inputMode: 'url',
+    autoComplete: 'url',
+    placeholder: 'https://github.com/username'
+  },
+  {
+    id: 'x' as SiteSocialPresetId,
+    label: 'X',
+    orderInputId: 'site-social-x-order',
+    inputId: 'site-social-x',
+    inputType: 'url',
+    inputMode: 'url',
+    autoComplete: 'url',
+    placeholder: 'https://x.com/username'
+  },
+  {
+    id: 'email' as SiteSocialPresetId,
+    label: 'Email',
+    orderInputId: 'site-social-email-order',
+    inputId: 'site-social-email',
+    inputType: 'email',
+    inputMode: 'email',
+    autoComplete: 'email',
+    placeholder: 'name@example.com'
+  }
+] as const;
 
 const initialResolved = getThemeSettings();
 const initialNavMap = new Map(
@@ -73,7 +133,11 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
 
         <form id="admin-form" class="admin-form" novalidate>
           <fieldset class="admin-group">
-            <legend>Site</legend>
+            <legend class="admin-group__legend">
+              <span class="admin-group__legend-zh">站点设置</span>
+              <span class="admin-group__legend-sep" aria-hidden="true">·</span>
+              <span class="admin-group__legend-en">Site</span>
+            </legend>
             <div class="admin-grid">
               <label class="admin-field">
                 <span class="admin-label">
@@ -96,46 +160,184 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
                 </span>
                 <textarea id="site-description" rows="3"></textarea>
               </label>
-              <label class="admin-field admin-field--full">
+              <label class="admin-field">
                 <span class="admin-label">
-                  <span class="admin-label__main">页脚版权行</span>
-                  <span class="admin-label__hint">（布局会自动附加年份范围）</span>
+                  <span class="admin-label__main">页脚年份</span>
+                  <span class="admin-label__hint">（结束年份自动拾取当前年）</span>
                 </span>
-                <input id="site-footer-copyright" type="text" autocomplete="off" />
+                <span class="admin-year-range">
+                  <input
+                    id="site-footer-start-year"
+                    type="number"
+                    min={footerStartYearMin}
+                    max={footerStartYearMax}
+                    step="1"
+                    inputmode="numeric"
+                    placeholder={String(footerStartYearMax)}
+                    aria-describedby="site-footer-preview"
+                  />
+                  <span class="admin-year-range__sep" aria-hidden="true">-</span>
+                  <input
+                    class="admin-year-range__readonly"
+                    type="text"
+                    value={String(footerStartYearMax)}
+                    readonly
+                    tabindex="-1"
+                    aria-label="当前年份（自动）"
+                  />
+                  <label class="admin-year-range__toggle">
+                    <input id="site-footer-show-current-year" type="checkbox" checked />
+                    <span class="sr-only">显示当前年</span>
+                  </label>
+                </span>
               </label>
+              <label class="admin-field">
+                <span class="admin-label">
+                  <span class="admin-label__main">页脚版权文案</span>
+                </span>
+                <input id="site-footer-copyright" type="text" autocomplete="off" aria-describedby="site-footer-preview" />
+              </label>
+              <div class="admin-field admin-field--full">
+                <p id="site-footer-preview" class="admin-help">
+                  页脚预览：<code id="site-footer-preview-value">© {footerStartYearMax} Whono · Theme Demo · by cxro</code>
+                </p>
+              </div>
             </div>
 
             <div class="admin-subgroup">
-              <p class="admin-subtitle">Social Links</p>
-              <div class="admin-grid">
-                <label class="admin-field">
-                  <span class="admin-label">
-                    <span class="admin-label__main">GitHub 链接</span>
-                  </span>
-                  <input id="site-social-github" type="url" inputmode="url" autocomplete="off" />
-                </label>
-                <label class="admin-field">
-                  <span class="admin-label">
-                    <span class="admin-label__main">X / Twitter 链接</span>
-                  </span>
-                  <input id="site-social-x" type="url" inputmode="url" autocomplete="off" />
-                </label>
-                <label class="admin-field">
-                  <span class="admin-label">
-                    <span class="admin-label__main">Email</span>
-                  </span>
-                  <input id="site-social-email" type="email" inputmode="email" autocomplete="off" />
-                </label>
-                <label class="admin-toggle-row">
-                  <input id="site-social-rss" type="checkbox" />
-                  <span>显示 RSS 链接（固定指向站内 /rss.xml）</span>
-                </label>
+              <p class="admin-subtitle">
+                <span class="admin-subtitle__main">社交链接</span>
+                <span class="admin-subtitle__hint">（固定平台 + 可新增链接）</span>
+              </p>
+              <div class="admin-social-panel">
+                <div class="admin-social-panel__head">
+                  <p class="admin-subtitle admin-subtitle--compact">
+                    <span class="admin-subtitle__main">链接列表</span>
+                    <span class="admin-subtitle__hint">（可继续新增 GitHub / X / Email 之外的平台，最多 {socialCustomLimit} 条）</span>
+                  </p>
+                  <p id="site-social-custom-count" class="admin-help">新增 0 / {socialCustomLimit}</p>
+                </div>
+                <p class="admin-help">
+                  about 页的 RSS 入口仍由前台固定输出；固定平台留空即隐藏，位置排序会与扩展链接一起参与统一排序。
+                </p>
+                <p id="site-social-custom-empty" class="admin-social-empty">
+                  当前只有 GitHub / X / Email。可继续新增微博、Bilibili、个人站点等链接。
+                </p>
+                <div class="admin-social-table">
+                  <div id="site-social-custom-head" class="admin-social-header" aria-hidden="true">
+                    <span>位置</span>
+                    <span>平台</span>
+                    <span>链接代号</span>
+                    <span>图标</span>
+                    <span>链接地址</span>
+                    <span>操作</span>
+                  </div>
+                  <div id="site-social-custom-list" class="admin-social-list">
+                    {
+                      socialPresetRows.map((row) => (
+                        <article class="admin-social-row admin-social-row--preset" data-social-preset-row data-social-preset-id={row.id}>
+                          <label class="admin-field admin-social-field admin-social-field--order">
+                            <span class="admin-social-cell-label">位置</span>
+                            <span class="admin-social-order-frame">
+                              <span class="admin-social-order-frame__mark" aria-hidden="true">[</span>
+                              <input
+                                id={row.orderInputId}
+                                data-social-preset-field="order"
+                                type="number"
+                                min="1"
+                                max="999"
+                                step="1"
+                                inputmode="numeric"
+                                aria-label={`${row.label} 位置排序`}
+                              />
+                              <span class="admin-social-order-frame__mark" aria-hidden="true">]</span>
+                            </span>
+                          </label>
+
+                          <div class="admin-field admin-social-field admin-social-field--platform admin-social-field--static">
+                            <span class="admin-social-cell-label">平台</span>
+                            <input class="admin-social-static-input" type="text" value={row.label} readonly tabindex="-1" />
+                          </div>
+
+                          <div class="admin-field admin-social-field admin-social-field--id admin-social-field--static">
+                            <span class="admin-social-cell-label">链接代号</span>
+                            <input
+                              class="admin-social-static-input admin-social-static-input--code"
+                              type="text"
+                              value={row.id}
+                              readonly
+                              tabindex="-1"
+                            />
+                          </div>
+
+                          <div class="admin-social-field admin-social-field--icon admin-social-field--static">
+                            <span class="admin-social-cell-label">图标</span>
+                            <div class="admin-social-icon-preview">
+                              <span class="admin-social-icon-only">
+                                <Icon name={row.id} class="admin-social-icon-only__icon" size={16} />
+                              </span>
+                            </div>
+                          </div>
+
+                          <label class="admin-field admin-social-field admin-social-field--href">
+                            <span class="admin-social-cell-label">{row.id === 'email' ? '邮箱地址' : '链接地址'}</span>
+                            <input
+                              id={row.inputId}
+                              data-social-preset-field="href"
+                              type={row.inputType}
+                              inputmode={row.inputMode}
+                              autocomplete={row.autoComplete}
+                              placeholder={row.placeholder}
+                            />
+                          </label>
+
+                          <div class="admin-field admin-social-field admin-social-field--actions admin-social-field--static">
+                            <span class="admin-social-cell-label">操作</span>
+                            <div class="admin-social-row-actions">
+                              <button
+                                class="admin-social-action"
+                                type="button"
+                                data-social-preset-action="toggle-visible"
+                                aria-pressed="true"
+                                aria-label={`隐藏 ${row.label}`}
+                                title={`隐藏 ${row.label}`}
+                              >
+                                <Icon name="eye" class="admin-social-action__icon" size={15} />
+                                <span class="sr-only">{`隐藏 ${row.label}`}</span>
+                              </button>
+                              <button
+                                class="admin-social-action admin-social-action--disabled"
+                                type="button"
+                                data-social-preset-action="remove"
+                                aria-label={`${row.label} 为固定项，不可删除`}
+                                title={`${row.label} 为固定项，不可删除`}
+                                disabled
+                              >
+                                <Icon name="trash" class="admin-social-action__icon" size={15} />
+                                <span class="sr-only">{`${row.label} 为固定项，不可删除`}</span>
+                              </button>
+                            </div>
+                          </div>
+                        </article>
+                      ))
+                    }
+                  </div>
+                </div>
+                <div class="admin-social-actions">
+                  <button id="site-social-custom-add" class="admin-btn admin-btn--ghost" type="button">
+                    新增链接
+                  </button>
+                </div>
               </div>
             </div>
           </fieldset>
 
           <fieldset class="admin-group">
-            <legend>Sidebar</legend>
+            <legend class="admin-group__legend">
+              <span class="admin-group__legend-zh">侧栏设置</span>
+              <span class="admin-group__legend-sep" aria-hidden="true">·</span>
+              <span class="admin-group__legend-en">Sidebar</span>
+            </legend>
             <div class="admin-grid">
               <label class="admin-field">
                 <span class="admin-label">
@@ -154,7 +356,10 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
             </div>
 
             <div class="admin-subgroup">
-              <p class="admin-subtitle">Sidebar 导航（仅既有项）</p>
+              <p class="admin-subtitle">
+                <span class="admin-subtitle__main">侧栏导航</span>
+                <span class="admin-subtitle__hint">（仅既有项）</span>
+              </p>
               <div class="admin-nav-grid">
                 <div class="admin-nav-header" aria-hidden="true">
                   <span>页面 ID</span>
@@ -166,19 +371,28 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
                   navIdOrder.map((id, index) => (
                     <div class="admin-nav-row" data-nav-id={id}>
                       <p class="admin-nav-id">
+                        <span class="admin-nav-cell-label">页面 ID</span>
                         <code>{id}</code>
                       </p>
                       <label class="admin-field admin-nav-field admin-nav-field--name">
+                        <span class="admin-nav-cell-label">页面名称</span>
                         <span class="sr-only">{id} 页面名称</span>
-                        <input data-nav-field="label" type="text" autocomplete="off" />
+                        <span class="admin-nav-name-frame">
+                          <span class="admin-nav-name-frame__mark" aria-hidden="true">&lt;</span>
+                          <input data-nav-field="label" type="text" autocomplete="off" />
+                          <span class="admin-nav-name-frame__mark" aria-hidden="true">&gt;</span>
+                        </span>
                       </label>
                       <label class="admin-field admin-nav-field admin-nav-field--order">
+                        <span class="admin-nav-cell-label">位置排序</span>
                         <span class="sr-only">{id} 位置排序</span>
                         <input data-nav-field="order" type="number" min="1" step="1" value={index + 1} />
                       </label>
                       <label class="admin-toggle">
-                        <input data-nav-field="visible" type="checkbox" aria-label={`${id} 是否显示`} />
-                        <span>展示</span>
+                        <span class="admin-nav-cell-label">是否展示</span>
+                        <span class="admin-toggle__control">
+                          <input data-nav-field="visible" type="checkbox" aria-label={`${id} 是否显示`} />
+                        </span>
                       </label>
                     </div>
                   ))
@@ -188,7 +402,11 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
           </fieldset>
 
           <fieldset class="admin-group">
-            <legend>Home</legend>
+            <legend class="admin-group__legend">
+              <span class="admin-group__legend-zh">首页设置</span>
+              <span class="admin-group__legend-sep" aria-hidden="true">·</span>
+              <span class="admin-group__legend-en">Home</span>
+            </legend>
             <div class="admin-grid">
               <label class="admin-field admin-field--full">
                 <span class="admin-label">
@@ -217,7 +435,11 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
           </fieldset>
 
           <fieldset class="admin-group">
-            <legend>Inner Pages</legend>
+            <legend class="admin-group__legend">
+              <span class="admin-group__legend-zh">内页设置</span>
+              <span class="admin-group__legend-sep" aria-hidden="true">·</span>
+              <span class="admin-group__legend-en">Inner pages</span>
+            </legend>
             <div class="admin-grid">
               <label class="admin-field">
                 <span class="admin-label">
@@ -256,7 +478,9 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
             </div>
 
             <div class="admin-subgroup">
-              <p class="admin-subtitle">Bits 默认作者</p>
+              <p class="admin-subtitle">
+                <span class="admin-subtitle__main">Bits 默认作者</span>
+              </p>
               <div class="admin-grid">
                 <label class="admin-field">
                   <span class="admin-label">
@@ -276,7 +500,11 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
           </fieldset>
 
           <fieldset class="admin-group">
-            <legend>Reading / Code</legend>
+            <legend class="admin-group__legend">
+              <span class="admin-group__legend-zh">阅读与代码</span>
+              <span class="admin-group__legend-sep" aria-hidden="true">·</span>
+              <span class="admin-group__legend-en">Reading / code</span>
+            </legend>
             <div class="admin-stack">
               <label class="admin-toggle-row">
                 <input id="ui-code-line-numbers" type="checkbox" />
@@ -295,6 +523,80 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
           <button id="admin-reset" class="admin-btn admin-btn--ghost" type="button">重置更改</button>
           <button id="admin-save" class="admin-btn admin-btn--muted" type="button">保存</button>
         </div>
+
+        <template id="site-social-custom-row-template">
+          <article class="admin-social-row" data-social-custom-row>
+            <label class="admin-field admin-social-field admin-social-field--order">
+              <span class="admin-social-cell-label">位置</span>
+              <span class="admin-social-order-frame">
+                <span class="admin-social-order-frame__mark" aria-hidden="true">[</span>
+                <input data-social-custom-field="order" type="number" min="1" step="1" inputmode="numeric" />
+                <span class="admin-social-order-frame__mark" aria-hidden="true">]</span>
+              </span>
+            </label>
+
+            <label class="admin-field admin-social-field admin-social-field--platform">
+              <span class="admin-social-cell-label">平台</span>
+              <select data-social-custom-field="iconKey">
+                {
+                  customSocialIconOptions.map((option) => (
+                    <option value={option.value} data-social-label={option.savedLabel}>
+                      {option.optionLabel}
+                    </option>
+                  ))
+                }
+              </select>
+            </label>
+
+            <label class="admin-field admin-social-field admin-social-field--id">
+              <span class="admin-social-cell-label">链接代号</span>
+              <input data-social-custom-field="id" type="text" autocomplete="off" spellcheck="false" />
+            </label>
+
+            <div class="admin-social-field admin-social-field--icon">
+              <span class="admin-social-cell-label">图标</span>
+              <div class="admin-social-icon-preview" data-social-custom-icon-preview>
+                {
+                  socialIconOptions.map((option) => (
+                    <span
+                      class="admin-social-icon-only"
+                      data-social-custom-icon-option={option.value}
+                      hidden={option.value !== defaultCustomSocialIconKey}
+                    >
+                      <Icon name={option.value} class="admin-social-icon-only__icon" size={16} />
+                    </span>
+                  ))
+                }
+              </div>
+            </div>
+
+            <label class="admin-field admin-social-field admin-social-field--href">
+              <span class="admin-social-cell-label">链接地址</span>
+              <input data-social-custom-field="href" type="url" inputmode="url" autocomplete="off" placeholder="https://example.com" />
+            </label>
+
+            <div class="admin-social-field admin-social-field--actions">
+              <span class="admin-social-cell-label">操作</span>
+              <div class="admin-social-row-actions">
+                <input data-social-custom-field="visible" type="checkbox" class="sr-only" />
+                <button class="admin-social-action" type="button" data-social-custom-action="toggle-visible" aria-pressed="true">
+                  <Icon name="eye" class="admin-social-action__icon" size={15} />
+                  <span class="sr-only" data-social-custom-visible-label>隐藏链接</span>
+                </button>
+                <button
+                  class="admin-social-action admin-social-action--danger"
+                  type="button"
+                  data-social-custom-action="remove"
+                  aria-label="删除链接"
+                  title="删除链接"
+                >
+                  <Icon name="trash" class="admin-social-action__icon" size={15} />
+                  <span class="sr-only">删除链接</span>
+                </button>
+              </div>
+            </div>
+          </article>
+        </template>
 
         <script id="admin-bootstrap" type="application/json" is:inline set:html={bootstrapJson}></script>
       </section>
@@ -329,6 +631,15 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
   const X_HOSTS = ['x.com', 'twitter.com'];
   const HOME_INTRO_MAX_LENGTH = 240;
   const PAGE_SUBTITLE_MAX_LENGTH = 120;
+  const FOOTER_START_YEAR_MIN = 1900;
+  const FOOTER_START_YEAR_MAX = new Date().getFullYear();
+  const SOCIAL_CUSTOM_LIMIT = 8;
+  const SOCIAL_PRESET_IDS = ['github', 'x', 'email'];
+  const SOCIAL_PRESET_DEFAULT_ORDER = {
+    github: 1,
+    x: 2,
+    email: 3
+  };
 
   const form = document.getElementById('admin-form');
   const statusEl = document.getElementById('admin-status');
@@ -338,19 +649,48 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
   const resetBtn = document.getElementById('admin-reset');
   const saveBtn = document.getElementById('admin-save');
   const bootstrapEl = document.getElementById('admin-bootstrap');
+  const footerPreviewEl = document.getElementById('site-footer-preview');
+  const footerPreviewValueEl = document.getElementById('site-footer-preview-value');
+  const socialCustomList = document.getElementById('site-social-custom-list');
+  const socialCustomHead = document.getElementById('site-social-custom-head');
+  const socialCustomCountEl = document.getElementById('site-social-custom-count');
+  const socialCustomEmptyEl = document.getElementById('site-social-custom-empty');
+  const socialCustomAddBtn = document.getElementById('site-social-custom-add');
+  const socialCustomTemplate = document.getElementById('site-social-custom-row-template');
 
-  if (!form || !statusEl || !dirtyBanner || !errorBanner || !validateBtn || !resetBtn || !saveBtn || !bootstrapEl) {
+  if (
+    !form ||
+    !statusEl ||
+    !dirtyBanner ||
+    !errorBanner ||
+    !validateBtn ||
+    !resetBtn ||
+    !saveBtn ||
+    !bootstrapEl ||
+    !footerPreviewEl ||
+    !footerPreviewValueEl ||
+    !socialCustomList ||
+    !socialCustomHead ||
+    !socialCustomCountEl ||
+    !socialCustomEmptyEl ||
+    !socialCustomAddBtn ||
+    !socialCustomTemplate
+  ) {
     return;
   }
 
   const inputSiteTitle = document.getElementById('site-title');
   const inputSiteDescription = document.getElementById('site-description');
   const inputSiteDefaultLocale = document.getElementById('site-default-locale');
+  const inputSiteFooterStartYear = document.getElementById('site-footer-start-year');
+  const inputSiteFooterShowCurrentYear = document.getElementById('site-footer-show-current-year');
   const inputSiteFooterCopyright = document.getElementById('site-footer-copyright');
+  const inputSiteSocialGithubOrder = document.getElementById('site-social-github-order');
   const inputSiteSocialGithub = document.getElementById('site-social-github');
+  const inputSiteSocialXOrder = document.getElementById('site-social-x-order');
   const inputSiteSocialX = document.getElementById('site-social-x');
+  const inputSiteSocialEmailOrder = document.getElementById('site-social-email-order');
   const inputSiteSocialEmail = document.getElementById('site-social-email');
-  const inputSiteSocialRss = document.getElementById('site-social-rss');
   const inputShellBrandTitle = document.getElementById('shell-brand-title');
   const inputShellQuote = document.getElementById('shell-quote');
   const inputHomeIntroLead = document.getElementById('home-intro-lead');
@@ -370,11 +710,15 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
     !inputSiteTitle ||
     !inputSiteDescription ||
     !inputSiteDefaultLocale ||
+    !inputSiteFooterStartYear ||
+    !inputSiteFooterShowCurrentYear ||
     !inputSiteFooterCopyright ||
+    !inputSiteSocialGithubOrder ||
     !inputSiteSocialGithub ||
+    !inputSiteSocialXOrder ||
     !inputSiteSocialX ||
+    !inputSiteSocialEmailOrder ||
     !inputSiteSocialEmail ||
-    !inputSiteSocialRss ||
     !inputShellBrandTitle ||
     !inputShellQuote ||
     !inputHomeIntroLead ||
@@ -394,7 +738,16 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
   }
 
   const getNavRows = () => Array.from(root.querySelectorAll('[data-nav-id]'));
+  const getPresetRows = () => Array.from(socialCustomList.querySelectorAll('[data-social-preset-row]'));
+  const getCustomRows = () => Array.from(socialCustomList.querySelectorAll('[data-social-custom-row]'));
   const deepClone = (value) => JSON.parse(JSON.stringify(value));
+  const DEFAULT_CUSTOM_SOCIAL_ICON_KEY = 'website';
+  const CUSTOM_SOCIAL_ICON_KEYS = new Set(
+    Array.from(socialCustomTemplate.content.querySelectorAll('[data-social-custom-field="iconKey"] option')).map(
+      (option) => option.value
+    )
+  );
+  const getPresetRowId = (row) => row?.getAttribute('data-social-preset-id') || 'github';
 
   const normalizeMultiline = (value) => value.replace(/\r\n/g, '\n');
   const normalizeOptionalSingleLine = (value) => {
@@ -406,10 +759,28 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
     const next = Number.parseInt(value, 10);
     return Number.isFinite(next) ? next : fallback;
   };
+  const parseInteger = (value) => {
+    const next = Number.parseInt(String(value ?? '').trim(), 10);
+    return Number.isFinite(next) ? next : null;
+  };
+  const getPresetOrderInputs = () => ({
+    github: inputSiteSocialGithubOrder,
+    x: inputSiteSocialXOrder,
+    email: inputSiteSocialEmailOrder
+  });
+  const getPresetSocialOrder = () => {
+    const inputs = getPresetOrderInputs();
+    return {
+      github: parseOrder(inputs.github.value, SOCIAL_PRESET_DEFAULT_ORDER.github),
+      x: parseOrder(inputs.x.value, SOCIAL_PRESET_DEFAULT_ORDER.x),
+      email: parseOrder(inputs.email.value, SOCIAL_PRESET_DEFAULT_ORDER.email)
+    };
+  };
   const isAllowedHttpsUrl = (value, hosts) => {
     try {
       const parsed = new URL(value);
       if (parsed.protocol !== 'https:') return false;
+      if (!Array.isArray(hosts) || !hosts.length) return true;
       const hostname = parsed.hostname.toLowerCase();
       return hosts.some((host) => hostname === host || hostname === `www.${host}` || hostname.endsWith(`.${host}`));
     } catch {
@@ -447,8 +818,289 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
     saveBtn.textContent = next ? '保存中...' : '保存';
   };
 
+  const getFooterPreviewText = () => {
+    const startYear = parseInteger(inputSiteFooterStartYear.value);
+    const endYear = FOOTER_START_YEAR_MAX;
+    const showCurrentYear = Boolean(inputSiteFooterShowCurrentYear.checked);
+    const yearRange = showCurrentYear && startYear && startYear < endYear
+      ? `${startYear}-${endYear}`
+      : String(startYear || endYear);
+    const copyright = inputSiteFooterCopyright.value.trim() || 'Whono · Theme Demo · by cxro';
+    return `页脚预览：© ${yearRange} ${copyright}`;
+  };
+
+  const refreshFooterPreview = () => {
+    footerPreviewValueEl.textContent = getFooterPreviewText().replace(/^页脚预览：/, '').trim();
+  };
+
+  const getSelectedSocialOption = (selectEl) => {
+    if (!(selectEl instanceof HTMLSelectElement)) return null;
+    return selectEl.selectedOptions?.[0] ?? null;
+  };
+
+  const getSocialOptionLabel = (selectEl) => {
+    const option = getSelectedSocialOption(selectEl);
+    return option?.getAttribute('data-social-label')?.trim() || option?.textContent?.trim() || '链接';
+  };
+
+  const getCustomRowIconKey = (row) => {
+    const select = row?.querySelector('[data-social-custom-field="iconKey"]');
+    const value = select instanceof HTMLSelectElement ? select.value : DEFAULT_CUSTOM_SOCIAL_ICON_KEY;
+    return CUSTOM_SOCIAL_ICON_KEYS.has(value) ? value : DEFAULT_CUSTOM_SOCIAL_ICON_KEY;
+  };
+
+  const getPresetRowHrefInput = (row) => row?.querySelector('[data-social-preset-field="href"]');
+  const getPresetRowOrderInput = (row) => row?.querySelector('[data-social-preset-field="order"]');
+  const isPresetRowVisible = (row) => {
+    const hrefInput = getPresetRowHrefInput(row);
+    return hrefInput instanceof HTMLInputElement && hrefInput.value.trim().length > 0;
+  };
+  const syncPresetRow = (row) => {
+    const toggleBtn = row?.querySelector('[data-social-preset-action="toggle-visible"]');
+    if (!(toggleBtn instanceof HTMLButtonElement)) return;
+
+    const presetId = getPresetRowId(row);
+    const label = presetId === 'x' ? 'X' : presetId === 'email' ? 'Email' : 'GitHub';
+    const visible = isPresetRowVisible(row);
+    toggleBtn.dataset.state = visible ? 'visible' : 'hidden';
+    toggleBtn.setAttribute('aria-pressed', visible ? 'true' : 'false');
+    toggleBtn.setAttribute('aria-label', visible ? `隐藏 ${label}` : `恢复 ${label}`);
+    toggleBtn.setAttribute('title', visible ? `隐藏 ${label}` : `恢复 ${label}`);
+  };
+  const normalizeSocialOrders = () => {
+    const presetRows = getPresetRows();
+    const customRows = getCustomRows();
+    const items = [
+      ...presetRows.map((row, index) => ({
+        row,
+        type: 'preset',
+        visible: isPresetRowVisible(row),
+        order: parseOrder(
+          getPresetRowOrderInput(row)?.value || '',
+          SOCIAL_PRESET_DEFAULT_ORDER[getPresetRowId(row)]
+        ),
+        tie: index
+      })),
+      ...customRows.map((row, index) => ({
+        row,
+        type: 'custom',
+        visible: Boolean(row.querySelector('[data-social-custom-field="visible"]')?.checked),
+        order: parseOrder(row.querySelector('[data-social-custom-field="order"]')?.value || '', index + 1),
+        tie: presetRows.length + index
+      }))
+    ];
+    const orderedItems = [
+      ...items.filter((item) => item.visible).sort((a, b) => a.order - b.order || a.tie - b.tie),
+      ...items.filter((item) => !item.visible).sort((a, b) => a.order - b.order || a.tie - b.tie)
+    ];
+
+    orderedItems.forEach((item, index) => {
+      const nextValue = String(index + 1);
+      if (item.type === 'preset') {
+        const orderInput = getPresetRowOrderInput(item.row);
+        if (orderInput instanceof HTMLInputElement) orderInput.value = nextValue;
+      } else {
+        const orderInput = item.row.querySelector('[data-social-custom-field="order"]');
+        if (orderInput instanceof HTMLInputElement) orderInput.value = nextValue;
+      }
+    });
+  };
+
+  const slugifyIdPart = (value) => {
+    const slug = String(value ?? '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return slug || 'link';
+  };
+
+  const getCustomIdValues = (exceptRow) =>
+    new Set(
+      getCustomRows()
+        .filter((row) => row !== exceptRow)
+        .map((row) => row.querySelector('[data-social-custom-field="id"]')?.value.trim())
+        .filter(Boolean)
+    );
+
+  const generateCustomId = (row, iconKey = getCustomRowIconKey(row)) => {
+    const existingIds = getCustomIdValues(row);
+    const base = `custom-${slugifyIdPart(iconKey)}`;
+    let candidate = base;
+    let suffix = 2;
+
+    while (existingIds.has(candidate)) {
+      candidate = `${base}-${suffix}`;
+      suffix += 1;
+    }
+
+    return candidate;
+  };
+
+  const getStoredGeneratedCustomId = (row) => row?.dataset.generatedId?.trim() || '';
+
+  const applyGeneratedCustomId = (row, nextId) => {
+    const idInput = row?.querySelector('[data-social-custom-field="id"]');
+    if (!(idInput instanceof HTMLInputElement)) return;
+
+    idInput.value = nextId;
+    row.dataset.generatedId = nextId;
+    row.dataset.idManual = 'false';
+  };
+
+  const shouldAutoSyncCustomId = (row) => {
+    const idInput = row?.querySelector('[data-social-custom-field="id"]');
+    if (!(idInput instanceof HTMLInputElement)) return false;
+
+    const trimmed = idInput.value.trim();
+    const generatedId = getStoredGeneratedCustomId(row);
+
+    return row?.dataset.idManual !== 'true' || !trimmed || (generatedId && trimmed === generatedId);
+  };
+
+  const getNextSocialOrder = () => {
+    const presetOrders = Object.values(getPresetSocialOrder());
+    const customOrders = getCustomRows()
+      .map((row) => parseInteger(row.querySelector('[data-social-custom-field="order"]')?.value))
+      .filter((value) => value != null);
+    const orders = [...presetOrders, ...customOrders];
+    return orders.length ? Math.max(...orders) + 1 : 1;
+  };
+
+  const syncCustomIconPreview = (row) => {
+    const iconKey = getCustomRowIconKey(row);
+    row.querySelectorAll('[data-social-custom-icon-option]').forEach((node) => {
+      const active = node.getAttribute('data-social-custom-icon-option') === iconKey;
+      node.hidden = !active;
+    });
+  };
+
+  const syncCustomVisibilityButton = (row) => {
+    const visibleInput = row.querySelector('[data-social-custom-field="visible"]');
+    const toggleBtn = row.querySelector('[data-social-custom-action="toggle-visible"]');
+    const toggleLabel = row.querySelector('[data-social-custom-visible-label]');
+    if (
+      !(visibleInput instanceof HTMLInputElement) ||
+      !(toggleBtn instanceof HTMLButtonElement) ||
+      !(toggleLabel instanceof Element)
+    ) {
+      return;
+    }
+
+    const visible = Boolean(visibleInput.checked);
+    toggleBtn.dataset.state = visible ? 'visible' : 'hidden';
+    toggleBtn.setAttribute('aria-pressed', visible ? 'true' : 'false');
+    toggleBtn.setAttribute('aria-label', visible ? '隐藏链接' : '显示链接');
+    toggleBtn.setAttribute('title', visible ? '隐藏链接' : '显示链接');
+    toggleLabel.textContent = visible ? '隐藏链接' : '显示链接';
+  };
+
+  const finalizeCustomIdInput = (row, options = {}) => {
+    const { regenerateIfEmpty = true } = options;
+    const idInput = row.querySelector('[data-social-custom-field="id"]');
+    if (!(idInput instanceof HTMLInputElement)) return;
+
+    const trimmed = idInput.value.trim();
+    const generatedId = getStoredGeneratedCustomId(row);
+    if (!trimmed && regenerateIfEmpty) {
+      applyGeneratedCustomId(row, generateCustomId(row));
+    } else {
+      idInput.value = trimmed;
+      row.dataset.idManual = trimmed && trimmed !== generatedId ? 'true' : 'false';
+    }
+  };
+
+  const syncCustomRow = (row, options = {}) => {
+    const { syncId = false } = options;
+    const idInput = row.querySelector('[data-social-custom-field="id"]');
+    if (!(idInput instanceof HTMLInputElement)) return;
+
+    if (syncId && shouldAutoSyncCustomId(row)) {
+      applyGeneratedCustomId(row, generateCustomId(row));
+    }
+
+    syncCustomIconPreview(row);
+    syncCustomVisibilityButton(row);
+  };
+
+  const updateCustomRowsUi = () => {
+    const rows = getCustomRows();
+    socialCustomHead.hidden = false;
+    socialCustomCountEl.textContent = `新增 ${rows.length} / ${SOCIAL_CUSTOM_LIMIT}`;
+    socialCustomEmptyEl.hidden = rows.length > 0;
+    socialCustomAddBtn.disabled = rows.length >= SOCIAL_CUSTOM_LIMIT;
+  };
+
+  const createCustomRow = (item, index, options = {}) => {
+    const { manualId = false } = options;
+    const fragment = socialCustomTemplate.content.cloneNode(true);
+    const row = fragment.querySelector('[data-social-custom-row]');
+    if (!row) return null;
+
+    const idInput = row.querySelector('[data-social-custom-field="id"]');
+    const hrefInput = row.querySelector('[data-social-custom-field="href"]');
+    const iconInput = row.querySelector('[data-social-custom-field="iconKey"]');
+    const orderInput = row.querySelector('[data-social-custom-field="order"]');
+    const visibleInput = row.querySelector('[data-social-custom-field="visible"]');
+
+    if (!idInput || !hrefInput || !iconInput || !orderInput || !visibleInput) {
+      return null;
+    }
+
+    row.dataset.idManual = manualId ? 'true' : 'false';
+    idInput.value = item?.id ? String(item.id).trim() : '';
+    hrefInput.value = item?.href ? String(item.href).trim() : '';
+    iconInput.value = CUSTOM_SOCIAL_ICON_KEYS.has(item?.iconKey) ? item.iconKey : DEFAULT_CUSTOM_SOCIAL_ICON_KEY;
+    orderInput.value = String(parseOrder(item?.order, index + 1));
+    visibleInput.checked = item?.visible !== false;
+    syncCustomRow(row, { syncId: !item?.id });
+    row.dataset.generatedId = idInput.value.trim();
+
+    return row;
+  };
+
+  const replaceCustomRows = (items) => {
+    getCustomRows().forEach((row) => row.remove());
+    const rows = Array.isArray(items) ? items : [];
+    rows.forEach((item, index) => {
+      const row = createCustomRow(item, index, { manualId: false });
+      if (row) socialCustomList.appendChild(row);
+    });
+    updateCustomRowsUi();
+  };
+
   const canonicalize = (settings) => {
     const next = deepClone(settings);
+    const socialLinks = next.site?.socialLinks && typeof next.site.socialLinks === 'object'
+      ? next.site.socialLinks
+      : {};
+    const customItems = Array.isArray(socialLinks.custom) ? socialLinks.custom : [];
+    next.site.socialLinks = {
+      github: socialLinks.github || null,
+      x: socialLinks.x || null,
+      email: socialLinks.email || null,
+      presetOrder: {
+        github: parseOrder(socialLinks.presetOrder?.github, SOCIAL_PRESET_DEFAULT_ORDER.github),
+        x: parseOrder(socialLinks.presetOrder?.x, SOCIAL_PRESET_DEFAULT_ORDER.x),
+        email: parseOrder(socialLinks.presetOrder?.email, SOCIAL_PRESET_DEFAULT_ORDER.email)
+      },
+      custom: customItems
+        .map((item, index) => ({
+          id: typeof item?.id === 'string' ? item.id.trim() : '',
+          label: typeof item?.label === 'string' ? item.label.trim() : '',
+          href: typeof item?.href === 'string' ? item.href.trim() : '',
+          iconKey: typeof item?.iconKey === 'string' ? item.iconKey.trim() : 'link',
+          visible: Boolean(item?.visible),
+          order: parseOrder(item?.order, index + 1),
+          __index: index
+        }))
+        .sort((a, b) => {
+          if (a.order !== b.order) return a.order - b.order;
+          const idCompare = a.id.localeCompare(b.id);
+          if (idCompare !== 0) return idCompare;
+          return a.__index - b.__index;
+        })
+        .map(({ __index, ...item }) => item)
+    };
     next.shell.nav = next.shell.nav
       .filter((item) => NAV_IDS.includes(item.id))
       .sort((a, b) => {
@@ -472,6 +1124,22 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
         visible: Boolean(visibleInput?.checked)
       };
     });
+    const custom = getCustomRows().map((row, index) => {
+      const idInput = row.querySelector('[data-social-custom-field="id"]');
+      const hrefInput = row.querySelector('[data-social-custom-field="href"]');
+      const iconInput = row.querySelector('[data-social-custom-field="iconKey"]');
+      const orderInput = row.querySelector('[data-social-custom-field="order"]');
+      const visibleInput = row.querySelector('[data-social-custom-field="visible"]');
+      const iconKey = iconInput instanceof HTMLSelectElement ? iconInput.value.trim() : '';
+      return {
+        id: (idInput?.value || '').trim(),
+        label: getSocialOptionLabel(iconInput),
+        href: (hrefInput?.value || '').trim(),
+        iconKey,
+        order: parseOrder(orderInput?.value || '', index + 1),
+        visible: Boolean(visibleInput?.checked)
+      };
+    });
 
     return {
       site: {
@@ -479,13 +1147,16 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
         description: normalizeMultiline(inputSiteDescription.value).trim(),
         defaultLocale: inputSiteDefaultLocale.value.trim(),
         footer: {
+          startYear: parseInteger(inputSiteFooterStartYear.value),
+          showCurrentYear: Boolean(inputSiteFooterShowCurrentYear.checked),
           copyright: inputSiteFooterCopyright.value.trim()
         },
         socialLinks: {
           github: inputSiteSocialGithub.value.trim() || null,
           x: inputSiteSocialX.value.trim() || null,
           email: normalizeEmail(inputSiteSocialEmail.value.trim()) || null,
-          rss: Boolean(inputSiteSocialRss.checked)
+          presetOrder: getPresetSocialOrder(),
+          custom
         }
       },
       shell: {
@@ -534,11 +1205,27 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
     inputSiteTitle.value = settings.site.title || '';
     inputSiteDescription.value = settings.site.description || '';
     inputSiteDefaultLocale.value = settings.site.defaultLocale || '';
+    inputSiteFooterStartYear.value = String(settings.site.footer?.startYear ?? '');
+    inputSiteFooterShowCurrentYear.checked = Boolean(settings.site.footer?.showCurrentYear);
     inputSiteFooterCopyright.value = settings.site.footer?.copyright || '';
+    inputSiteSocialGithubOrder.value = String(
+      settings.site.socialLinks?.presetOrder?.github ?? SOCIAL_PRESET_DEFAULT_ORDER.github
+    );
     inputSiteSocialGithub.value = settings.site.socialLinks?.github || '';
+    inputSiteSocialXOrder.value = String(
+      settings.site.socialLinks?.presetOrder?.x ?? SOCIAL_PRESET_DEFAULT_ORDER.x
+    );
     inputSiteSocialX.value = settings.site.socialLinks?.x || '';
+    inputSiteSocialEmailOrder.value = String(
+      settings.site.socialLinks?.presetOrder?.email ?? SOCIAL_PRESET_DEFAULT_ORDER.email
+    );
     inputSiteSocialEmail.value = settings.site.socialLinks?.email || '';
-    inputSiteSocialRss.checked = Boolean(settings.site.socialLinks?.rss);
+    getPresetRows().forEach((row) => {
+      delete row.dataset.stashedHref;
+      delete row.dataset.stashedOrder;
+      syncPresetRow(row);
+    });
+    replaceCustomRows(settings.site.socialLinks?.custom || []);
     inputShellBrandTitle.value = settings.shell.brandTitle || '';
     inputShellQuote.value = settings.shell.quote || '';
     inputHomeIntroLead.value = settings.home.introLead || '';
@@ -553,6 +1240,7 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
     inputHeroPreset.value = settings.home.heroPresetId || 'default';
     inputCodeLineNumbers.checked = Boolean(settings.ui?.codeBlock?.showLineNumbers);
     inputReadingEntry.checked = Boolean(settings.ui?.readingMode?.showEntry);
+    refreshFooterPreview();
 
     const navMap = new Map((settings.shell.nav || []).map((item) => [item.id, item]));
     getNavRows().forEach((row, index) => {
@@ -577,6 +1265,17 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
     } else if (!LOCALE_RE.test(settings.site.defaultLocale)) {
       errors.push('默认语言格式无效（示例：zh-CN）');
     }
+    if (!Number.isInteger(settings.site.footer?.startYear)) {
+      errors.push('页脚起始年份必须是整数');
+    } else if (
+      settings.site.footer.startYear < FOOTER_START_YEAR_MIN ||
+      settings.site.footer.startYear > FOOTER_START_YEAR_MAX
+    ) {
+      errors.push('页脚起始年份超出允许范围');
+    }
+    if (typeof settings.site.footer?.showCurrentYear !== 'boolean') {
+      errors.push('是否显示当前年必须是布尔值');
+    }
     if (!settings.site.footer?.copyright) {
       errors.push('页脚版权行不能为空');
     } else if (settings.site.footer.copyright.includes('\n') || settings.site.footer.copyright.includes('\r')) {
@@ -594,9 +1293,60 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
     if (settings.site.socialLinks?.email && !EMAIL_RE.test(normalizeEmail(settings.site.socialLinks.email))) {
       errors.push('Email 必须是合法邮箱地址');
     }
-    if (typeof settings.site.socialLinks?.rss !== 'boolean') {
-      errors.push('RSS 显示开关必须是布尔值');
+    const presetOrder = settings.site.socialLinks?.presetOrder || {};
+    const seenPresetOrders = new Set();
+    SOCIAL_PRESET_IDS.forEach((id) => {
+      const order = presetOrder[id];
+      const rowLabel = id === 'github' ? 'GitHub' : id === 'x' ? 'X / Twitter' : 'Email';
+      if (!Number.isInteger(order) || order < 1 || order > 999) {
+        errors.push(rowLabel + ' 的位置排序必须为 1-999 的整数');
+        return;
+      }
+      if (seenPresetOrders.has(order)) {
+        errors.push('固定平台位置排序不能重复：' + order);
+      }
+      seenPresetOrders.add(order);
+    });
+    const customLinks = Array.isArray(settings.site.socialLinks?.custom) ? settings.site.socialLinks.custom : [];
+    if (customLinks.length > SOCIAL_CUSTOM_LIMIT) {
+      errors.push('自定义链接最多只能添加 ' + SOCIAL_CUSTOM_LIMIT + ' 条');
     }
+    const seenCustomIds = new Set();
+    const seenCustomOrders = new Set();
+    customLinks.forEach((item, index) => {
+      const rowLabel = '自定义链接 #' + (index + 1);
+      if (!item.id) {
+        errors.push(rowLabel + ' 的 ID 不能为空');
+      } else {
+        if (item.id.includes('\n') || item.id.includes('\r')) {
+          errors.push(rowLabel + ' 的 ID 只允许单行文本');
+        }
+        if (seenCustomIds.has(item.id)) {
+          errors.push('自定义链接 ID 重复：' + item.id);
+        }
+        seenCustomIds.add(item.id);
+      }
+      if (!item.label) {
+        errors.push(rowLabel + ' 的显示名称不能为空');
+      } else if (item.label.includes('\n') || item.label.includes('\r')) {
+        errors.push(rowLabel + ' 的显示名称只允许单行文本');
+      }
+      if (!item.href || !isAllowedHttpsUrl(item.href)) {
+        errors.push(rowLabel + ' 的链接必须是合法 https:// 地址');
+      }
+      if (!CUSTOM_SOCIAL_ICON_KEYS.has(item.iconKey)) {
+        errors.push(rowLabel + ' 的图标必须从白名单中选择');
+      }
+      if (!Number.isInteger(item.order) || item.order < 1) {
+        errors.push(rowLabel + ' 的位置排序必须是正整数');
+      } else if (seenCustomOrders.has(item.order)) {
+        errors.push('自定义链接位置排序不能重复：' + item.order);
+      }
+      seenCustomOrders.add(item.order);
+      if (typeof item.visible !== 'boolean') {
+        errors.push(rowLabel + ' 的 visible 必须是布尔值');
+      }
+    });
 
     if (!settings.shell.brandTitle) errors.push('侧栏站点名不能为空');
     if (!settings.shell.quote) errors.push('侧栏引用文案不能为空');
@@ -729,6 +1479,135 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\u003c');
 
   form.addEventListener('input', refreshDirty);
   form.addEventListener('change', refreshDirty);
+  inputSiteFooterStartYear.addEventListener('input', refreshFooterPreview);
+  inputSiteFooterShowCurrentYear.addEventListener('change', refreshFooterPreview);
+  inputSiteFooterCopyright.addEventListener('input', refreshFooterPreview);
+  socialCustomAddBtn.addEventListener('click', () => {
+    if (getCustomRows().length >= SOCIAL_CUSTOM_LIMIT) {
+      setStatus('warn', '自定义链接已达到上限');
+      return;
+    }
+    const row = createCustomRow(
+      {
+        href: '',
+        iconKey: DEFAULT_CUSTOM_SOCIAL_ICON_KEY,
+        order: getNextSocialOrder(),
+        visible: true
+      },
+      getCustomRows().length,
+      { manualId: false }
+    );
+    if (!row) return;
+    socialCustomList.appendChild(row);
+    updateCustomRowsUi();
+    refreshDirty();
+    row.querySelector('[data-social-custom-field="iconKey"]')?.focus();
+  });
+
+  socialCustomList.addEventListener('change', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const presetRow = target.closest('[data-social-preset-row]');
+    if (presetRow) {
+      syncPresetRow(presetRow);
+      return;
+    }
+
+    const row = target.closest('[data-social-custom-row]');
+    if (!row) return;
+
+    if (target.matches('[data-social-custom-field="iconKey"]')) {
+      syncCustomRow(row, { syncId: true });
+    }
+  });
+
+  socialCustomList.addEventListener('input', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const presetRow = target.closest('[data-social-preset-row]');
+    if (presetRow) {
+      syncPresetRow(presetRow);
+      return;
+    }
+
+    if (!target.matches('[data-social-custom-field="id"]')) return;
+    const row = target.closest('[data-social-custom-row]');
+    if (!row) return;
+    const trimmed = target.value.trim();
+    const generatedId = getStoredGeneratedCustomId(row);
+    row.dataset.idManual = trimmed && trimmed !== generatedId ? 'true' : 'false';
+  });
+
+  socialCustomList.addEventListener('focusout', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element) || !target.matches('[data-social-custom-field="id"]')) {
+      return;
+    }
+    const row = target.closest('[data-social-custom-row]');
+    if (!row) return;
+    finalizeCustomIdInput(row);
+    refreshDirty();
+  });
+
+  socialCustomList.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const presetActionBtn = target.closest('[data-social-preset-action]');
+    if (presetActionBtn instanceof HTMLButtonElement) {
+      const presetRow = presetActionBtn.closest('[data-social-preset-row]');
+      if (!presetRow) return;
+      const action = presetActionBtn.getAttribute('data-social-preset-action');
+
+      if (action === 'toggle-visible') {
+        const hrefInput = getPresetRowHrefInput(presetRow);
+        const orderInput = getPresetRowOrderInput(presetRow);
+        if (!(hrefInput instanceof HTMLInputElement) || !(orderInput instanceof HTMLInputElement)) return;
+
+        const visible = hrefInput.value.trim().length > 0;
+        if (visible) {
+          presetRow.dataset.stashedHref = hrefInput.value.trim();
+          presetRow.dataset.stashedOrder = orderInput.value.trim();
+          hrefInput.value = '';
+        } else {
+          hrefInput.value = presetRow.dataset.stashedHref || '';
+          orderInput.value = presetRow.dataset.stashedOrder || String(getNextSocialOrder());
+        }
+
+        normalizeSocialOrders();
+        syncPresetRow(presetRow);
+        refreshDirty();
+      }
+      return;
+    }
+
+    const actionBtn = target.closest('[data-social-custom-action]');
+    if (!(actionBtn instanceof HTMLButtonElement)) return;
+    const row = actionBtn.closest('[data-social-custom-row]');
+    if (!row) return;
+    const action = actionBtn.getAttribute('data-social-custom-action');
+
+    if (action === 'remove') {
+      row.remove();
+      getCustomRows().forEach((item) => syncCustomRow(item));
+      normalizeSocialOrders();
+      updateCustomRowsUi();
+      refreshDirty();
+      return;
+    }
+
+    if (action === 'toggle-visible') {
+      const visibleInput = row.querySelector('[data-social-custom-field="visible"]');
+      if (!(visibleInput instanceof HTMLInputElement)) return;
+      visibleInput.checked = !visibleInput.checked;
+      syncCustomVisibilityButton(row);
+      normalizeSocialOrders();
+      refreshDirty();
+      return;
+    }
+  });
 
   validateBtn.addEventListener('click', () => {
     const current = canonicalize(collectSettings());

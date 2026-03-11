@@ -7,34 +7,21 @@ The format is based on Keep a Changelog, and this project aims to follow Semanti
 
 ## [Unreleased]
 ### Added
-- 新增 `src/lib/theme-settings.ts`：Theme Console 统一读取层，支持 `settings > legacy > default` 回退与来源标记（`new/legacy/default`）
-- 新增只读接口 `GET /api/admin/settings`（`src/pages/api/admin/settings.ts`），返回合并后的 `site/shell/home/page/ui` 配置与来源标记
-- 新增 Theme Console 页面 `/admin/`（`src/pages/admin/index.astro`），提供受约束配置表单、未保存提示与基础校验
-- 新增保存接口 `POST /api/admin/settings`（`src/pages/api/admin/settings.ts`）：`DEV` 可写、`PROD` `404`、白名单字段校验、白名单文件原子写入
-- 新增 `src/styles/components/admin.css` 并接入 `src/styles/global.css` 聚合入口
-- Phase 1.5 M1：新增 `site.footer.copyright` 与 `site.socialLinks`（`github` / `x` / `email` / `rss`）配置字段，并接入 `/admin`
-- Phase 1.5 M2：新增 `home.introLead` 与 `home.introMore` 配置字段，并接入 `/admin`
-- Phase 1.5 M3：新增 `page.*.subtitle` 与 `page.bits.defaultAuthor` 配置字段，并接入 `/admin`
+- 新增本地主题设置页 `/admin/`，用于集中编辑站点标题、默认描述、页脚版权、首页导语、栏目副标题和 Bits 默认作者等主题配置
+- 新增侧栏设置，支持修改站点名、引用文案，以及既有导航项的名称、排序和显示状态
+- 新增社交链接设置，支持维护 GitHub、X、Email 和最多 8 条自定义链接；关于页会同步显示
+- 新增显示开关，支持控制阅读模式入口和代码行号
+- 新增本地配置保存机制；首次保存时生成本地配置文件，未生成前仍兼容旧配置读取
 
 ### Changed
-- BaseLayout/Sidebar/BitCard/BitsDraftDialog/RSS 改为读取统一配置层，收敛分散的旧配置读取入口
-- `<html lang>` 改为读取 `defaultLocale`（无配置时回退 `zh-CN`）
-- 阅读模式入口显示改为受 `ui.readingMode.showEntry` 控制
-- 代码行号全局开关改为由 `ui.codeBlock.showLineNumbers` 驱动（关闭时注入 `data-line-numbers="off"`）
-- `BaseLayout` 页脚版权行改为读取 `site.footer.copyright`，保留年份范围由布局统一输出
-- `about/index.astro` 的社交图标与联系区改为读取 `site.socialLinks`，`rss` 固定指向站内 `/rss.xml`
-- 首页导语改为读取 `home.introLead` / `home.introMore`；`introMore` 后方的 `归档` / `随笔` 链接保持前台固定输出
-- Theme Console 顶层存储分组改为 `site/shell/home/page/ui`：侧栏站点名、引用与导航从 `site/home` 收敛到 `shell`，固定页 subtitle 与 bits 默认作者收敛到 `page`
-- 固定页 subtitle 改为读取 `page.*.subtitle`；`essay` / `archive` 的动态计数、分页与 RSS 入口仍由前台固定输出，`memo` 保持 `settings > frontmatter > default`
-- sitemap 生成时固定排除 `/admin`（`astro.config.mjs`），并将生产态 `/admin` 约束同步到 README/SSOT/ARCHITECTURE/TODO
-- Theme Console 的 Sidebar 导航排序交互改为“位置排序”语义，默认顺序使用 `1-5`，并移除数字输入的上下微调按钮
-- Theme Console（`/admin`）文案与信息结构优化：字段命名更直观、页头表达更统一，降低用户首次配置理解成本
-- Theme Console（`/admin`）交互与可用性优化：按 `Site / Sidebar / Home / Inner Pages / Reading / Code` 重排表单，主标签与辅助说明拆分层级，Sidebar 导航编辑区与底部操作区布局更清晰
+- 页脚、首页导语、侧栏和关于页社交信息改为读取统一配置，与 `/admin/` 设置保持一致
+- `/admin/` 的社交链接表支持固定平台参与统一排序；GitHub / X / Email 保留预设语义，但可编辑位置排序
+- 生产环境中的 `/admin/` 保持只读，并从 sitemap 中排除
 
 ### Fixed
-- 修复 Theme Console 初始读取接口路径为 `/api/admin/settings/`（与 `trailingSlash: 'always'` 保持一致），避免 `/admin` 页面误报“接口读取失败”
-- 修复 `/api/admin/settings/` 与静态构建的兼容性：`src/pages/api/admin/settings.ts` 改为 `DEV` 动态、`PROD` 静态预渲染，避免额外要求 adapter
-- 优化 Theme Console 保存链路的请求体校验与错误提示（区分空请求体与非法 JSON）
+- 修复 `/admin/` 首次加载可能提示接口读取失败的问题
+- 修复开发环境下 `/admin/` 偶发无法保存配置的问题
+- 改进保存失败提示，便于区分空请求、JSON 格式错误和字段校验失败
 
 ## [0.1.1] - 2026-02-07
 ### Added
