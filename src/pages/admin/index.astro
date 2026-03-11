@@ -86,16 +86,8 @@ const bootstrapJson = JSON.stringify(initialPayloadWithFallbackNav).replace(/</g
             <h1 class="page-title">Theme Console</h1>
             <span class="page-subtitle">主题设置</span>
           </div>
-          <p
-            id="admin-status"
-            class="admin-status"
-            data-state="idle"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-          >
-            等待加载
-          </p>
+          <p id="admin-status-live" class="admin-sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+          <p id="admin-status" class="admin-status" data-state="idle">等待加载</p>
         </header>
 
         <p
@@ -103,6 +95,7 @@ const bootstrapJson = JSON.stringify(initialPayloadWithFallbackNav).replace(/</g
           class="admin-banner admin-banner--error"
           hidden
           role="alert"
+          aria-atomic="true"
           tabindex="-1"
         ></p>
 
@@ -130,17 +123,10 @@ const bootstrapJson = JSON.stringify(initialPayloadWithFallbackNav).replace(/</g
         <div id="admin-actions-sentinel" class="admin-actions__sentinel" aria-hidden="true"></div>
         <div id="admin-actions" class="admin-actions" data-dirty="false" data-sticky="false">
           <div class="admin-actions__meta">
-            <p id="admin-dirty-banner" class="admin-banner admin-banner--dirty" hidden aria-live="polite">
+            <p id="admin-dirty-banner" class="admin-banner admin-banner--dirty" hidden>
               * 你有未保存更改，离开页面会触发提醒。
             </p>
-            <p
-              id="admin-status-inline"
-              class="admin-status admin-status--inline"
-              data-state="idle"
-              role="status"
-              aria-live="polite"
-              aria-atomic="true"
-            >
+            <p id="admin-status-inline" class="admin-status admin-status--inline" data-state="idle" aria-hidden="true">
               等待加载
             </p>
           </div>

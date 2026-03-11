@@ -181,36 +181,53 @@ const { settings } = getThemeSettings();
           <span class="bits-identity-label-icon" aria-hidden="true">
             <Icon name="user-circle" />
           </span>
-          <span>作者（可选）</span>
+          <span id="bits-identity-heading">作者（可选）</span>
         </div>
         <div class="bits-identity-row">
           <div class="bits-identity-controls">
-            <button class="bits-identity-pill" type="button" data-identity-pill>
+            <button
+              class="bits-identity-pill"
+              type="button"
+              data-identity-pill
+              aria-controls="bits-identity-panel"
+              aria-expanded="false"
+            >
               <span class="bits-identity-avatar" data-identity-avatar aria-hidden="true"></span>
               <span class="bits-identity-name" data-identity-name></span>
             </button>
           </div>
-          <button class="bits-identity-new" type="button" data-identity-new>自定义作者</button>
+          <button
+            class="bits-identity-new"
+            type="button"
+            data-identity-new
+            aria-controls="bits-identity-panel"
+            aria-expanded="false"
+          >
+            自定义作者
+          </button>
         </div>
       </div>
 
-      <details class="bits-identity-advanced" data-identity-details>
-        <summary class="bits-identity-summary" aria-hidden="true">
-          身份设置
-          <span class="bits-identity-hint">留空使用默认</span>
-        </summary>
+      <div
+        id="bits-identity-panel"
+        class="bits-identity-advanced"
+        data-identity-panel
+        role="group"
+        aria-labelledby="bits-identity-heading"
+        hidden
+      >
         <div class="bits-identity-fields">
           <label class="bits-identity-label">
             <span class="bits-identity-label-title">作者名</span>
             <input type="text" name="authorName" inputmode="text" data-author-name />
-        </label>
-        <label class="bits-identity-label">
-          <span class="bits-identity-label-row">
-            <span class="bits-identity-label-title">头像路径（URL）</span>
-            <span class="bits-identity-label-hint">留空用默认头像；加载失败则显示首字符</span>
-          </span>
-          <input type="text" name="authorAvatar" inputmode="url" data-author-avatar />
-        </label>
+          </label>
+          <label class="bits-identity-label">
+            <span class="bits-identity-label-row">
+              <span class="bits-identity-label-title">头像路径（URL）</span>
+              <span class="bits-identity-label-hint">留空用默认头像；加载失败则显示首字符</span>
+            </span>
+            <input type="text" name="authorAvatar" inputmode="url" data-author-avatar />
+          </label>
         </div>
         <div class="bits-identity-meta">
           <p class="bits-identity-note">
@@ -218,7 +235,7 @@ const { settings } = getThemeSettings();
           </p>
           <button type="button" class="bits-identity-reset" data-author-reset>恢复默认</button>
         </div>
-      </details>
+      </div>
     </div>
 
     <div class="bits-draft-footer">

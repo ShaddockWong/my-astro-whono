@@ -180,7 +180,24 @@
   transition: opacity 0.18s ease;
 }
 
+.prose [data-lightbox-trigger="true"] {
+  cursor: zoom-in;
+}
+
+.prose a[data-lightbox-trigger="true"] {
+  display: inline-block;
+}
+
 .prose img[data-lightbox]:hover {
+  opacity: 0.92;
+}
+
+.prose [data-lightbox-trigger="true"]:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 4px;
+}
+
+.prose [data-lightbox-trigger="true"]:focus-visible img {
   opacity: 0.92;
 }
 

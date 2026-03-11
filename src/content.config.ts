@@ -47,7 +47,7 @@ const bits = defineCollection({
     date: z.coerce.date(),
     tags: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
-    slug: z.string().optional(),
+    slug: slugRule.optional(),
 
     // Optional media for card display.
     images: z.array(bitsImage).optional(),

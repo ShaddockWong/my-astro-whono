@@ -1092,19 +1092,13 @@
 }
 
 .bits-identity-advanced {
-  border: 0;
-  border-radius: 10px;
-  padding: 0;
-  background: transparent;
-}
-
-.bits-identity-advanced[open] {
   border: 1px solid var(--border);
+  border-radius: 10px;
   padding: 8px 10px;
   background: var(--panel);
 }
 
-.bits-identity-summary {
+.bits-identity-advanced[hidden] {
   display: none;
 }
 
@@ -1230,7 +1224,6 @@
 .bits-draft-close:focus-visible,
 .bits-identity-pill:focus-visible,
 .bits-identity-new:focus-visible,
-.bits-identity-summary:focus-visible,
 .bits-identity-reset:focus-visible {
   outline: 2px solid var(--bits-focus, var(--muted));
   outline-offset: 2px;

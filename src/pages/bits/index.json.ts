@@ -15,6 +15,7 @@ export const GET: APIRoute = async () => {
     const plain = cleanMarkdownToText(bit.body ?? '');
     const text = plain.length > MAX_INDEX_TEXT ? plain.slice(0, MAX_INDEX_TEXT) : plain;
     return {
+      key: bit.id,
       slug: bit.data.slug ?? bit.id,
       title: bit.data.title ?? '',
       description: bit.data.description ?? '',

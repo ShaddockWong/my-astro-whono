@@ -27,7 +27,7 @@ A minimal two-column Astro theme for personal writing and lightweight publishing
 - Content collections: essay / bits / memo (archive is generated from essay)
 - Built-in local Theme Console (`/admin`) for visually managing site settings during development, making it easy to take over the theme after forking or cloning
 - Bits draft generator on `/bits/`: one-click Markdown output (copy/download), with multi-image support and automatic image dimension detection
-- RSS: aggregated feed + section feeds
+- RSS: default archive feed + section feeds
 - Light / dark theme + reading mode
 
 
@@ -213,6 +213,8 @@ images:                         # Optional: multi-image list (dimensions reduce 
 # draft: true   # Optional draft; visible in `dev`, hidden by default in `build/preview` and production
 ```
 
+`/bits/` does not currently generate detail routes from `slug`, nor does it render it as visible UI text; unless you are extending the theme, you usually do not need to set it.
+
 Author info (on `/bits/` only):
 
 - Default author and avatar are read from Theme Console via `page.bits.defaultAuthor`; if `src/data/settings/page.json` does not exist yet, they fall back to `site.author` / `site.authorAvatar` in `site.config.mjs`
@@ -301,8 +303,8 @@ Font license: SIL Open Font License 1.1 (see `public/fonts/OFL-LXGW-WenKai-Lite.
 
 ## RSS
 
-- `/rss.xml` (aggregated)
-- `/archive/rss.xml`
+- `/rss.xml` (default feed; uses the same archive items as `/archive/rss.xml`)
+- `/archive/rss.xml` (archive feed)
 - `/essay/rss.xml`
 
 Setting `SITE_URL` is recommended for deployment (affects absolute links in RSS/OG/canonical).

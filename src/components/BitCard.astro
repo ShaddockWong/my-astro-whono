@@ -34,7 +34,7 @@ const wideIndex = totalImages > 1 && totalImages <= maxVisible && totalImages % 
 const hasTags = Boolean(placeText || normalTagItems.length);
 ---
 
-<article class="bit-card" data-bit data-slug={bit.data.slug ?? bit.id}>
+<article class="bit-card" data-bit data-bit-key={bit.id} data-slug={bit.data.slug ?? bit.id}>
   <div class="bit-author">
     <div class={`avatar${authorAvatar ? ' avatar--image' : ' is-fallback'}`} aria-hidden="true">
       {authorAvatar ? (

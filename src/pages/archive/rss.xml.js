@@ -7,7 +7,7 @@ const base = import.meta.env.BASE_URL ?? '/';
 const withBase = createWithBase(base);
 const { settings } = getThemeSettings();
 
-export async function GET(context) {
+export async function buildArchiveFeed(context, overrides = {}) {
   const essays = await getPublished('essay', {
     includeDraft: false,
     orderBy: (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
@@ -18,8 +18,8 @@ export async function GET(context) {
     .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
   return rss({
-    title: `${settings.site.title} · 归档`,
-    description: '归档更新',
+    title: overrides.title ?? `${settings.site.title} · 归档`,
+    description: overrides.description ?? '归档更新',
     site: context.site,
     items: archiveItems.map((entry) => ({
       title: entry.data.title,
@@ -28,4 +28,8 @@ export async function GET(context) {
       link: withBase(`/archive/${entry.data.slug ?? entry.id}/`)
     }))
   });
+}
+
+export async function GET(context) {
+  return buildArchiveFeed(context);
 }

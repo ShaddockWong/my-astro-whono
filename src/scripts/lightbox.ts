@@ -20,8 +20,12 @@ type ArticleLightboxOptions = LightboxOptions & {
   imageLinkPrefixes?: string[];
 };
 
+type LightboxOpenOptions = {
+  opener?: HTMLElement | null;
+};
+
 type LightboxController = {
-  open: (images: LightboxImage[], index: number) => void;
+  open: (images: LightboxImage[], index: number, options?: LightboxOpenOptions) => void;
   close: () => void;
 };
 
@@ -72,6 +76,7 @@ const createLightboxController = (options: LightboxOptions): LightboxController 
   let baseHeight = 0;
   let containerWidth = 0;
   let containerHeight = 0;
+  let openerEl: HTMLElement | null = null;
   const scrollState = {
     top: 0,
     bodyOverflow: '',
@@ -247,8 +252,25 @@ const createLightboxController = (options: LightboxOptions): LightboxController 
     scrollLocked = false;
   };
 
-  const openDialog = (images: LightboxImage[], index: number) => {
+  const focusDialogTarget = () => {
+    const target = closeBtn ?? dialog;
+    window.requestAnimationFrame(() => {
+      target.focus({ preventScroll: true });
+    });
+  };
+
+  const restoreOpenerFocus = () => {
+    const target = openerEl;
+    openerEl = null;
+    if (!target?.isConnected) return;
+    window.requestAnimationFrame(() => {
+      target.focus({ preventScroll: true });
+    });
+  };
+
+  const openDialog = (images: LightboxImage[], index: number, openOptions?: LightboxOpenOptions) => {
     if (images.length === 0) return;
+    openerEl = openOptions?.opener ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     currentImages = images;
     currentIndex = clampIndex(index, images.length);
     updateView();
@@ -261,8 +283,8 @@ const createLightboxController = (options: LightboxOptions): LightboxController 
         dialog.setAttribute('open', '');
       }
     }
-    dialog.focus();
     lockScroll();
+    focusDialogTarget();
   };
 
   const closeDialog = () => {
@@ -276,6 +298,7 @@ const createLightboxController = (options: LightboxOptions): LightboxController 
       unlockScroll();
     }
     hideDialog();
+    restoreOpenerFocus();
   };
 
   const init = () => {
@@ -499,7 +522,7 @@ export const initBitsLightbox = (options: LightboxOptions = {}) => {
     if (!card) return;
     const images = parseImages(card);
     if (!images || images.length === 0) return;
-    controller.open(images, index);
+    controller.open(images, index, { opener: button });
   };
 
   document.addEventListener('click', (event) => {
@@ -576,8 +599,13 @@ export const initArticleLightbox = (options: ArticleLightboxOptions = {}) => {
 
   const minImageSize = options.minImageSize ?? 40;
   const linkPrefixes = options.imageLinkPrefixes ?? ['/images/', '/assets/', '/bits/'];
+  const dialogId = options.dialogId ?? 'lightbox';
 
-  const items: Array<{ el: HTMLImageElement; image: LightboxImage }> = [];
+  const items: Array<{
+    el: HTMLImageElement;
+    triggerEl: HTMLElement;
+    image: LightboxImage;
+  }> = [];
 
   const images = Array.from(container.querySelectorAll<HTMLImageElement>('img'));
   images.forEach((img) => {
@@ -591,9 +619,11 @@ export const initArticleLightbox = (options: ArticleLightboxOptions = {}) => {
       return;
     }
 
-    const src = getPreferredSrc(img, shouldUseLinkHref(href, linkPrefixes) ? href : undefined);
+    const useHref = shouldUseLinkHref(href, linkPrefixes);
+    const src = getPreferredSrc(img, useHref ? href : undefined);
     if (!src) return;
 
+    const triggerEl = link ?? img;
     const image: LightboxImage = {
       src,
       alt: img.alt ?? ''
@@ -602,7 +632,7 @@ export const initArticleLightbox = (options: ArticleLightboxOptions = {}) => {
     if (caption) image.caption = caption;
     if (img.naturalWidth > 0) image.width = img.naturalWidth;
     if (img.naturalHeight > 0) image.height = img.naturalHeight;
-    items.push({ el: img, image });
+    items.push({ el: img, triggerEl, image });
   });
 
   if (items.length === 0) return;
@@ -610,25 +640,23 @@ export const initArticleLightbox = (options: ArticleLightboxOptions = {}) => {
   items.forEach((item, index) => {
     item.el.dataset.lightbox = 'true';
     item.el.dataset.lightboxIndex = String(index);
+    item.triggerEl.dataset.lightboxTrigger = 'true';
+    item.triggerEl.dataset.lightboxIndex = String(index);
+    item.triggerEl.setAttribute('aria-haspopup', 'dialog');
+    item.triggerEl.setAttribute('aria-controls', dialogId);
+    if (item.triggerEl === item.el) {
+      item.el.tabIndex = 0;
+      item.el.setAttribute('role', 'button');
+      if (!item.el.getAttribute('alt')?.trim() && !item.el.getAttribute('aria-label')) {
+        item.el.setAttribute('aria-label', '打开图片预览');
+      }
+    }
   });
 
-  container.addEventListener('click', (event) => {
-    const target = event.target as HTMLElement | null;
-    if (!target) return;
-    const img = target.closest<HTMLImageElement>('img[data-lightbox="true"]');
-    if (!img) return;
-    if (isTinyImage(img, minImageSize)) return;
+  const openFromTrigger = (trigger: HTMLElement) => {
+    const index = Number(trigger.getAttribute('data-lightbox-index') ?? '-1');
+    if (!Number.isFinite(index) || index < 0 || index >= items.length) return;
 
-    const link = img.closest<HTMLAnchorElement>('a[href]');
-    if (link) {
-      if (event.metaKey || event.ctrlKey) return;
-      if (!shouldUseLinkHref(link.href, linkPrefixes)) return;
-      event.preventDefault();
-    } else {
-      event.preventDefault();
-    }
-
-    const index = Number(img.dataset.lightboxIndex ?? '0');
     const list = items.map((item) => {
       const link = item.el.closest<HTMLAnchorElement>('a[href]');
       const href = link?.href ?? '';
@@ -639,6 +667,35 @@ export const initArticleLightbox = (options: ArticleLightboxOptions = {}) => {
         src: nextSrc
       };
     });
-    controller.open(list, index);
+    controller.open(list, index, { opener: trigger });
+  };
+
+  container.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+    const trigger = target.closest<HTMLElement>('[data-lightbox-trigger="true"]');
+    if (!trigger) return;
+    const img = items.find((item) => item.triggerEl === trigger)?.el;
+    if (!img) return;
+    if (isTinyImage(img, minImageSize)) return;
+
+    if (trigger instanceof HTMLAnchorElement) {
+      if (event.metaKey || event.ctrlKey) return;
+      event.preventDefault();
+    } else {
+      event.preventDefault();
+    }
+
+    openFromTrigger(trigger);
+  });
+
+  container.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+    const trigger = target.closest<HTMLElement>('[data-lightbox-trigger="true"]');
+    if (!trigger || trigger instanceof HTMLAnchorElement || trigger instanceof HTMLButtonElement) return;
+    event.preventDefault();
+    openFromTrigger(trigger);
   });
 };

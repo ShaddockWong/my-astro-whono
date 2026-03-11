@@ -1,28 +1,11 @@
-import rss from '@astrojs/rss';
-import { getPublished, isReservedSlug } from '../lib/content';
-import { createWithBase } from '../utils/format';
 import { getThemeSettings } from '../lib/theme-settings';
+import { buildArchiveFeed } from './archive/rss.xml.js';
 
-const base = import.meta.env.BASE_URL ?? '/';
-const withBase = createWithBase(base);
 const { settings } = getThemeSettings();
 
 export async function GET(context) {
-  const essays = await getPublished('essay', { includeDraft: false });
-  const archiveItems = essays
-    .filter((entry) => entry.data.archive !== false)
-    .filter((entry) => !isReservedSlug(entry.data.slug ?? entry.id))
-    .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
-
-  return rss({
+  return buildArchiveFeed(context, {
     title: settings.site.title,
-    description: settings.site.description,
-    site: context.site,
-    items: archiveItems.map((entry) => ({
-      title: entry.data.title,
-      pubDate: entry.data.date,
-      description: entry.data.description,
-      link: withBase(`/archive/${entry.data.slug ?? entry.id}/`)
-    }))
+    description: settings.site.description
   });
 }

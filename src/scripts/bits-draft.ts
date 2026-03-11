@@ -28,7 +28,7 @@ const tagsEl = dialog?.querySelector<HTMLInputElement>('#bits-draft-tags') ?? nu
 const placeEl = dialog?.querySelector<HTMLInputElement>('#bits-draft-place') ?? null;
 const authorNameEl = dialog?.querySelector<HTMLInputElement>('[data-author-name]') ?? null;
 const authorAvatarEl = dialog?.querySelector<HTMLInputElement>('[data-author-avatar]') ?? null;
-const identityDetails = dialog?.querySelector<HTMLDetailsElement>('[data-identity-details]') ?? null;
+const identityPanel = dialog?.querySelector<HTMLElement>('[data-identity-panel]') ?? null;
 const identityBar = dialog?.querySelector<HTMLElement>('[data-identity-bar]') ?? null;
 const identityPill = dialog?.querySelector<HTMLButtonElement>('[data-identity-pill]') ?? null;
 const identityNew = dialog?.querySelector<HTMLButtonElement>('[data-identity-new]') ?? null;
@@ -39,6 +39,7 @@ const imagesWrap = dialog?.querySelector<HTMLElement>('[data-bits-images]') ?? n
 const imageAddBtn = dialog?.querySelector<HTMLButtonElement>('[data-bits-image-add]') ?? null;
 const imageTemplate = dialog?.querySelector<HTMLTemplateElement>('[data-bits-image-template]') ?? null;
 const draftEl = dialog?.querySelector<HTMLInputElement>('#bits-draft-draft') ?? null;
+let lastIdentityTrigger: HTMLButtonElement | null = identityPill ?? identityNew ?? null;
 
 const pad2 = (value: number) => String(value).padStart(2, '0');
 const base = import.meta.env.BASE_URL ?? '/';
@@ -361,15 +362,48 @@ const updateIdentityPill = () => {
 };
 
 const updateIdentityToggleState = () => {
-  const isOpen = !!identityDetails?.open;
+  const isOpen = !!identityPanel && !identityPanel.hidden;
   if (identityBar) identityBar.classList.toggle('is-open', isOpen);
+  identityPill?.setAttribute('aria-expanded', String(isOpen));
+  identityNew?.setAttribute('aria-expanded', String(isOpen));
 };
 
-const toggleIdentityDetails = () => {
-  if (!identityDetails) return;
-  const nextOpen = !identityDetails.open;
-  identityDetails.open = nextOpen;
-  if (nextOpen) authorNameEl?.focus();
+const setIdentityPanelOpen = (nextOpen: boolean, trigger?: HTMLButtonElement | null) => {
+  if (!identityPanel) return;
+  if (trigger) lastIdentityTrigger = trigger;
+  identityPanel.hidden = !nextOpen;
+  updateIdentityToggleState();
+  if (nextOpen) {
+    authorNameEl?.focus();
+    return;
+  }
+  (trigger ?? lastIdentityTrigger)?.focus();
+};
+
+const toggleIdentityPanel = (trigger?: HTMLButtonElement | null) => {
+  if (!identityPanel) return;
+  const nextOpen = identityPanel.hidden;
+  setIdentityPanelOpen(nextOpen, trigger);
+};
+
+const closeIdentityPanel = (trigger?: HTMLButtonElement | null) => {
+  if (!identityPanel || identityPanel.hidden) return;
+  setIdentityPanelOpen(false, trigger);
+};
+
+const openIdentityPanel = (trigger?: HTMLButtonElement | null) => {
+  if (!identityPanel || !identityPanel.hidden) return;
+  setIdentityPanelOpen(true, trigger);
+};
+
+const handleIdentityToggleKey = (event: KeyboardEvent) => {
+  if (event.key !== 'Escape') return;
+  if (!identityPanel || identityPanel.hidden) return;
+  event.preventDefault();
+  closeIdentityPanel();
+};
+
+const syncIdentityToggleState = () => {
   updateIdentityToggleState();
 };
 
@@ -609,7 +643,7 @@ const openDialog = () => {
   updateToolbarActive();
   setAuthorPlaceholders();
   updateIdentityPill();
-  updateIdentityToggleState();
+  syncIdentityToggleState();
   dialog.showModal();
   window.setTimeout(() => {
     contentEl?.focus();
@@ -624,9 +658,9 @@ const closeDialog = () => {
   updateManualLink();
   if (authorNameEl) authorNameEl.value = '';
   if (authorAvatarEl) authorAvatarEl.value = '';
-  if (identityDetails) identityDetails.open = false;
+  if (identityPanel) identityPanel.hidden = true;
   updateIdentityPill();
-  updateIdentityToggleState();
+  syncIdentityToggleState();
   dialog.close();
 };
 
@@ -659,12 +693,16 @@ imageAddBtn?.addEventListener('click', () => {
 });
 
 identityPill?.addEventListener('click', () => {
-  toggleIdentityDetails();
+  toggleIdentityPanel(identityPill);
 });
 
 identityNew?.addEventListener('click', () => {
-  toggleIdentityDetails();
+  toggleIdentityPanel(identityNew);
 });
+
+identityPill?.addEventListener('keydown', handleIdentityToggleKey);
+identityNew?.addEventListener('keydown', handleIdentityToggleKey);
+identityPanel?.addEventListener('keydown', handleIdentityToggleKey);
 
 authorNameEl?.addEventListener('input', () => {
   updateIdentityPill();
@@ -678,6 +716,14 @@ authorResetBtn?.addEventListener('click', () => {
   if (authorNameEl) authorNameEl.value = '';
   if (authorAvatarEl) authorAvatarEl.value = '';
   updateIdentityPill();
+});
+
+authorNameEl?.addEventListener('focus', () => {
+  openIdentityPanel(identityPill);
+});
+
+authorAvatarEl?.addEventListener('focus', () => {
+  openIdentityPanel(identityPill);
 });
 
 form?.addEventListener('input', () => {

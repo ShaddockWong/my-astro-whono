@@ -10,10 +10,11 @@ const indexUrl = withBase('bits/index.json');
 
 const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-bit]')).map((el) => ({
   el,
-  slug: (el.getAttribute('data-slug') || '').trim()
+  key: (el.getAttribute('data-bit-key') || el.getAttribute('data-slug') || '').trim()
 }));
 
 type IndexItem = {
+  key?: string;
   slug: string;
   title: string;
   description: string;
@@ -21,6 +22,8 @@ type IndexItem = {
   text: string;
   date: string | null;
 };
+
+const getIndexKey = (item: Pick<IndexItem, 'key' | 'slug'>) => (item.key || item.slug || '').trim();
 
 const showAll = () => {
   for (const { el } of cards) {
@@ -71,7 +74,11 @@ const loadIndex = async () => {
       .then((data) => {
         if (!Array.isArray(data)) throw new Error('index data invalid');
         indexCache = data as IndexItem[];
-        indexHay = new Map(indexCache.map((item) => [item.slug, buildHay(item)]));
+        indexHay = new Map(
+          indexCache
+            .map((item) => [getIndexKey(item), buildHay(item)] as const)
+            .filter(([key]) => key !== '')
+        );
         setStatus('');
         return indexCache;
       })
@@ -96,12 +103,12 @@ const applyFilter = async () => {
     showAll();
     return;
   }
-  for (const { el, slug } of cards) {
-    if (!slug) {
+  for (const { el, key } of cards) {
+    if (!key) {
       el.style.display = '';
       continue;
     }
-    const hay = indexHay.get(slug) || '';
+    const hay = indexHay.get(key) || '';
     el.style.display = hay.includes(q) ? '' : 'none';
   }
 };

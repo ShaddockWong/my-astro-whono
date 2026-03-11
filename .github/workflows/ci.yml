@@ -41,3 +41,57 @@ jobs:
 
       - name: Run CI
         run: npm run ci
+
+      - name: Build with SITE_URL
+        env:
+          SITE_URL: https://example.com
+        run: npm run build
+
+      - name: Verify production artifacts
+        shell: bash
+        env:
+          SITE_URL: https://example.com
+        run: |
+          set -euo pipefail
+
+          test -f dist/sitemap-index.xml
+          test -f dist/sitemap-0.xml
+          test -f dist/robots.txt
+          test -f dist/rss.xml
+          test -f dist/archive/rss.xml
+          test -f dist/essay/rss.xml
+          test -f dist/about/index.html
+          test -f dist/archive/markdown-guide/index.html
+
+          grep -q "Sitemap: ${SITE_URL}/sitemap-index.xml" dist/robots.txt
+          grep -q "<loc>${SITE_URL}/about/</loc>" dist/sitemap-0.xml
+          grep -q "<link rel=\"canonical\" href=\"${SITE_URL}/about/\"" dist/about/index.html
+          grep -q "<meta property=\"og:url\" content=\"${SITE_URL}/about/\"" dist/about/index.html
+          grep -q "<link>${SITE_URL}/archive/markdown-guide/</link>" dist/rss.xml
+          grep -q "<link>${SITE_URL}/archive/markdown-guide/</link>" dist/archive/rss.xml
+          grep -q "<link>${SITE_URL}/archive/markdown-guide/</link>" dist/essay/rss.xml
+
+          if grep -q "/admin/" dist/sitemap-0.xml; then
+            echo "Admin route leaked into sitemap"
+            exit 1
+          fi
+
+          if grep -q "\\.admin-" dist/about/index.html; then
+            echo "Public about page still contains admin CSS rules"
+            exit 1
+          fi
+
+          if grep -q -- "--admin-status-" dist/about/index.html; then
+            echo "Public about page still contains admin CSS tokens"
+            exit 1
+          fi
+
+          if grep -q "\\.admin-" dist/archive/markdown-guide/index.html; then
+            echo "Archive detail page still contains admin CSS rules"
+            exit 1
+          fi
+
+          if grep -q -- "--admin-status-" dist/archive/markdown-guide/index.html; then
+            echo "Archive detail page still contains admin CSS tokens"
+            exit 1
+          fi

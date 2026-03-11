@@ -79,6 +79,7 @@ if (!root) {
     form: byId<HTMLFormElement>('admin-form'),
     adminActions: byId<HTMLElement>('admin-actions'),
     adminActionsSentinel: byId<HTMLElement>('admin-actions-sentinel'),
+    statusLiveEl: byId<HTMLElement>('admin-status-live'),
     statusEl: byId<HTMLElement>('admin-status'),
     statusInlineEl: byId<HTMLElement>('admin-status-inline'),
     dirtyBanner: byId<HTMLElement>('admin-dirty-banner'),
@@ -145,6 +146,7 @@ if (!root) {
       form,
       adminActions,
       adminActionsSentinel,
+      statusLiveEl,
       statusEl,
       statusInlineEl,
       dirtyBanner,
@@ -453,18 +455,30 @@ if (!root) {
     const STATUS_WAITING_SAVE = '等待保存';
     const STATUS_CLEAN = '当前配置无未保存更改';
 
-    const setStatus = (state: string, message: string): void => {
-      statusTargets.forEach((target) => {
-        target.dataset.state = state;
-        target.textContent = message;
-      });
+    const setStatus = (state: string, message: string, options: { announce?: boolean } = {}): void => {
+      const currentState = statusEl.dataset.state ?? '';
+      const currentMessage = statusEl.textContent?.trim() || '';
+      if (currentState !== state || currentMessage !== message) {
+        statusTargets.forEach((target) => {
+          target.dataset.state = state;
+          target.textContent = message;
+        });
+      }
+
+      if (options.announce === false) return;
+
+      const liveState = statusLiveEl.dataset.state ?? '';
+      const liveMessage = statusLiveEl.textContent?.trim() || '';
+      if (liveState === state && liveMessage === message) return;
+      statusLiveEl.dataset.state = state;
+      statusLiveEl.textContent = message;
     };
     const syncDirtyStatus = (next: boolean): void => {
       const currentState = statusEl.dataset.state;
       const currentMessage = statusEl.textContent?.trim() || '';
 
       if (next) {
-        if (currentState === 'ready' || currentState === 'ok') {
+        if ((currentState === 'ready' || currentState === 'ok') && currentMessage !== STATUS_WAITING_SAVE) {
           setStatus('ready', STATUS_WAITING_SAVE);
         }
         return;
@@ -1484,7 +1498,11 @@ if (!root) {
       return payload.errors.filter((error): error is string => typeof error === 'string' && error.length > 0);
     };
 
-    const loadPayload = (payload: unknown, source: LoadSource): void => {
+    const loadPayload = (
+      payload: unknown,
+      source: LoadSource,
+      options: { announceStatus?: boolean } = {}
+    ): void => {
       const resolvedPayload = extractSettingsPayload(payload);
       if (!resolvedPayload) {
         clearInvalidFields();
@@ -1497,13 +1515,17 @@ if (!root) {
       clearInvalidFields();
       setErrors([]);
       setDirty(false);
-      setStatus('ready', source === 'remote' ? '已同步最新配置' : '已载入初始配置');
+      setStatus(
+        'ready',
+        source === 'remote' ? '已同步最新配置' : '已载入初始配置',
+        { announce: options.announceStatus ?? source === 'remote' }
+      );
     };
 
     const loadBootstrap = (): void => {
       try {
         const payload = JSON.parse(bootstrapEl.textContent || '{}') as unknown;
-        loadPayload(payload, 'bootstrap');
+        loadPayload(payload, 'bootstrap', { announceStatus: false });
       } catch (error) {
         setStatus('error', '初始化数据解析失败');
         console.error(error);
@@ -1511,7 +1533,7 @@ if (!root) {
     };
 
     const loadFromApi = async (): Promise<void> => {
-      setStatus('loading', '正在读取 /api/admin/settings');
+      setStatus('loading', '正在读取 /api/admin/settings', { announce: false });
       try {
         const response = await fetch(endpoint, {
           method: 'GET',
@@ -1733,7 +1755,7 @@ if (!root) {
       const issues = validateSettings(current);
       setValidationIssues(issues);
       if (issues.length) {
-        setStatus('error', '校验未通过');
+        setStatus('error', '校验未通过', { announce: false });
         revealErrorState(issues);
         return;
       }
@@ -1755,7 +1777,7 @@ if (!root) {
       const issues = validateSettings(current);
       setValidationIssues(issues);
       if (issues.length) {
-        setStatus('error', '保存前校验失败');
+        setStatus('error', '保存前校验失败', { announce: false });
         revealErrorState(issues);
         return;
       }
@@ -1768,7 +1790,7 @@ if (!root) {
         if (!requestBody) {
           clearInvalidFields();
           setErrors(['保存请求体为空，请刷新页面后重试']);
-          setStatus('error', '保存失败');
+          setStatus('error', '保存失败', { announce: false });
           revealErrorState();
           return;
         }
@@ -1789,16 +1811,16 @@ if (!root) {
           const serverErrors = getPayloadErrors(payload);
           setErrors(serverErrors.length ? serverErrors : ['保存失败，请稍后重试']);
           if (response.status === 404) {
-            setStatus('error', '当前环境不允许写入（仅 DEV 可写）');
+            setStatus('error', '当前环境不允许写入（仅 DEV 可写）', { announce: false });
           } else {
-            setStatus('error', '保存失败');
+            setStatus('error', '保存失败', { announce: false });
           }
           revealErrorState();
           return;
         }
 
         if (extractSettingsPayload(payload)) {
-          loadPayload(payload, 'remote');
+          loadPayload(payload, 'remote', { announceStatus: false });
           setStatus('ok', '保存成功，请刷新目标页面查看效果');
         } else {
           baseline = current;
@@ -1811,7 +1833,7 @@ if (!root) {
         console.error(error);
         clearInvalidFields();
         setErrors(['保存请求失败，请检查本地服务日志']);
-        setStatus('error', '保存失败');
+        setStatus('error', '保存失败', { announce: false });
         revealErrorState();
       } finally {
         setSaving(false);
