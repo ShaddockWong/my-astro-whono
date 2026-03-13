@@ -7,12 +7,15 @@ import {
   ADMIN_HOME_INTRO_LINK_DEFAULT,
   ADMIN_HOME_INTRO_LINK_KEY_SET,
   ADMIN_HOME_INTRO_LINK_LIMIT,
+  ADMIN_LOCALE_RE,
   ADMIN_NAV_ORNAMENT_DEFAULT,
   ADMIN_NAV_ORNAMENT_MAX_LENGTH,
   ADMIN_HERO_PRESET_SET,
+  getAdminBitsAvatarLocalFilePath,
   ADMIN_SIDEBAR_DIVIDER_DEFAULT,
   getAdminHeroImageLocalFilePath,
   isAdminSidebarDividerVariant,
+  normalizeAdminBitsAvatarPath,
   normalizeAdminSocialIconKey,
   normalizeAdminHeroImageSrc
 } from './admin-console/shared';
@@ -405,6 +408,11 @@ const asNonEmptyString = (value: unknown): string | undefined => {
   return next ? next : undefined;
 };
 
+const asLocale = (value: unknown): string | undefined => {
+  const next = asNonEmptyString(value);
+  return next && ADMIN_LOCALE_RE.test(next) ? next : undefined;
+};
+
 const asSingleLineString = (value: unknown, maxLength?: number): string | undefined => {
   const next = asNonEmptyString(value);
   if (!next) return undefined;
@@ -510,6 +518,16 @@ const asHeroImageSrc = (value: unknown): string | null | undefined => {
   if (normalized === undefined || normalized === null) return normalized;
 
   const localFilePath = getAdminHeroImageLocalFilePath(normalized);
+  if (!localFilePath) return normalized;
+
+  return existsSync(join(process.cwd(), ...localFilePath.split('/'))) ? normalized : undefined;
+};
+
+const asBitsAvatarPath = (value: unknown): string | undefined => {
+  const normalized = normalizeAdminBitsAvatarPath(value);
+  if (normalized === undefined || !normalized) return normalized;
+
+  const localFilePath = getAdminBitsAvatarLocalFilePath(normalized);
   if (!localFilePath) return normalized;
 
   return existsSync(join(process.cwd(), ...localFilePath.split('/'))) ? normalized : undefined;
@@ -706,7 +724,7 @@ export const getThemeSettings = (): ThemeSettingsResolved => {
     DEFAULT_SITE.description
   );
   const defaultLocale = resolveValue(
-    asNonEmptyString(siteJson?.defaultLocale),
+    asLocale(siteJson?.defaultLocale),
     undefined,
     DEFAULT_SITE.defaultLocale
   );
@@ -854,8 +872,8 @@ export const getThemeSettings = (): ThemeSettingsResolved => {
     DEFAULT_PAGE.bits.defaultAuthor.name
   );
   const bitsDefaultAuthorAvatar = resolveValue(
-    asString(pageBitsDefaultAuthorJson?.avatar),
-    asString(legacySite.authorAvatar),
+    asBitsAvatarPath(pageBitsDefaultAuthorJson?.avatar),
+    asBitsAvatarPath(legacySite.authorAvatar),
     DEFAULT_PAGE.bits.defaultAuthor.avatar
   );
   const memoSubtitle = resolveValue<string | null>(

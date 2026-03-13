@@ -40,6 +40,7 @@ import {
   isAdminNavId,
   isAdminSocialIconKey,
   isAdminSocialPresetId,
+  normalizeAdminBitsAvatarPath,
   normalizeAdminSocialIconKey,
   normalizeAdminHeroImageSrc
 } from '@/lib/admin-console/shared';
@@ -1511,11 +1512,11 @@ if (!root) {
         pushIssue('Bits 默认作者名不能为空', () => inputPageBitsAuthorName);
       }
       if (settings.page.bits?.defaultAuthor?.avatar) {
-        if (settings.page.bits.defaultAuthor.avatar.startsWith('/')) {
-          pushIssue('Bits 默认头像必须是相对路径，不要以 / 开头', () => inputPageBitsAuthorAvatar);
-        }
-        if (/^[A-Za-z]+:\/\//.test(settings.page.bits.defaultAuthor.avatar)) {
-          pushIssue('Bits 默认头像当前仅允许相对路径，不允许 URL', () => inputPageBitsAuthorAvatar);
+        if (normalizeAdminBitsAvatarPath(settings.page.bits.defaultAuthor.avatar) === undefined) {
+          pushIssue(
+            'Bits 默认头像只允许相对图片路径（例如 author/avatar.webp），不要带 public/、不要以 / 开头，也不要包含 URL、..、?、#',
+            () => inputPageBitsAuthorAvatar
+          );
         }
       }
 

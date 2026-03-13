@@ -108,6 +108,7 @@ export const ADMIN_FOOTER_COPYRIGHT_MAX_LENGTH = 120;
 export const ADMIN_LOCALE_RE = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/;
 export const ADMIN_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ADMIN_HERO_IMAGE_LOCAL_EXT_RE = /\.(?:avif|gif|jpe?g|png|webp)$/i;
+const ADMIN_BITS_AVATAR_LOCAL_EXT_RE = /\.(?:avif|gif|jpe?g|png|svg|webp)$/i;
 
 export const getAdminFooterStartYearMax = (): number => new Date().getFullYear();
 
@@ -197,7 +198,7 @@ export const isAdminAllowedHttpsUrl = (value: string, allowedHosts?: readonly st
   }
 };
 
-const hasInvalidHeroImagePathSegment = (value: string): boolean =>
+const hasInvalidLocalImagePathSegment = (value: string): boolean =>
   /(^|\/)\.\.(?:\/|$)/.test(value) || value.includes('?') || value.includes('#');
 
 const toCanonicalHeroAssetPath = (value: string): string | null => {
@@ -221,7 +222,7 @@ export const normalizeAdminHeroImageSrc = (value: unknown): string | null | unde
   if (isAdminAllowedHttpsUrl(trimmed)) return new URL(trimmed).toString();
 
   const normalized = trimmed.replace(/\\/g, '/').replace(/^\.\/+/, '');
-  if (!normalized || normalized.startsWith('//') || hasInvalidHeroImagePathSegment(normalized)) {
+  if (!normalized || normalized.startsWith('//') || hasInvalidLocalImagePathSegment(normalized)) {
     return undefined;
   }
 
@@ -242,4 +243,30 @@ export const getAdminHeroImageLocalFilePath = (value: string): string | null => 
   if (value.startsWith('src/assets/')) return value;
   if (value.startsWith('/')) return `public${value}`;
   return null;
+};
+
+export const normalizeAdminBitsAvatarPath = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') return undefined;
+
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  const normalized = trimmed.replace(/\\/g, '/').replace(/^\.\/+/, '');
+  if (
+    !normalized ||
+    normalized.startsWith('/') ||
+    normalized.startsWith('//') ||
+    normalized.startsWith('public/') ||
+    /^[A-Za-z]+:\/\//.test(normalized) ||
+    hasInvalidLocalImagePathSegment(normalized)
+  ) {
+    return undefined;
+  }
+
+  return ADMIN_BITS_AVATAR_LOCAL_EXT_RE.test(normalized) ? normalized : undefined;
+};
+
+export const getAdminBitsAvatarLocalFilePath = (value: string): string | null => {
+  if (!value) return null;
+  return `public/${value}`;
 };

@@ -40,60 +40,70 @@ const essays = await getPublished('essay', {
 const visibleEssays = essays.filter((entry) => !isReservedSlug(entry.data.slug ?? entry.id));
 const latest = visibleEssays.slice(0, 12);
 
-const homeHeadCriticalCss = String.raw`
-@font-face {
-  font-family: "LXGW WenKai Lite";
-  src: url("/fonts/lxgw-wenkai-lite-latin.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0000-00FF, U+2000-206F, U+3000-303F, U+FF00-FFEF;
-}
+type HomeHeadCriticalFontFace = {
+  family: 'LXGW WenKai Lite' | 'Noto Serif SC';
+  fileName: string;
+  weight: 400 | 600;
+  unicodeRange: string;
+};
 
-@font-face {
-  font-family: "LXGW WenKai Lite";
-  src: url("/fonts/lxgw-wenkai-lite-cjk-common.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+4E00-9FFF;
-}
+// Keep this subset aligned with the faces the home shell actually uses above the fold.
+const HOME_HEAD_CRITICAL_FONT_FACES = [
+  {
+    family: 'LXGW WenKai Lite',
+    fileName: 'lxgw-wenkai-lite-latin.woff2',
+    weight: 400,
+    unicodeRange: 'U+0000-00FF, U+2000-206F, U+3000-303F, U+FF00-FFEF'
+  },
+  {
+    family: 'LXGW WenKai Lite',
+    fileName: 'lxgw-wenkai-lite-cjk-common.woff2',
+    weight: 400,
+    unicodeRange: 'U+4E00-9FFF'
+  },
+  {
+    family: 'Noto Serif SC',
+    fileName: 'noto-serif-sc-400-latin.woff2',
+    weight: 400,
+    unicodeRange: 'U+0000-00FF, U+2000-206F, U+3000-303F, U+FF00-FFEF'
+  },
+  {
+    family: 'Noto Serif SC',
+    fileName: 'noto-serif-sc-400-cjk-common.woff2',
+    weight: 400,
+    unicodeRange: 'U+4E00-9FFF'
+  },
+  {
+    family: 'Noto Serif SC',
+    fileName: 'noto-serif-sc-600-latin.woff2',
+    weight: 600,
+    unicodeRange: 'U+0000-00FF, U+2000-206F, U+3000-303F, U+FF00-FFEF'
+  },
+  {
+    family: 'Noto Serif SC',
+    fileName: 'noto-serif-sc-600-cjk-common.woff2',
+    weight: 600,
+    unicodeRange: 'U+4E00-9FFF'
+  }
+] as const satisfies readonly HomeHeadCriticalFontFace[];
 
-@font-face {
-  font-family: "Noto Serif SC";
-  src: url("/fonts/noto-serif-sc-400-latin.woff2") format("woff2");
-  font-weight: 400;
+const renderHomeHeadCriticalFontFace = ({
+  family,
+  fileName,
+  weight,
+  unicodeRange
+}: HomeHeadCriticalFontFace): string => String.raw`@font-face {
+  font-family: "${family}";
+  src: url("${withBase(`/fonts/${fileName}`)}") format("woff2");
+  font-weight: ${weight};
   font-style: normal;
   font-display: swap;
-  unicode-range: U+0000-00FF, U+2000-206F, U+3000-303F, U+FF00-FFEF;
-}
+  unicode-range: ${unicodeRange};
+}`;
 
-@font-face {
-  font-family: "Noto Serif SC";
-  src: url("/fonts/noto-serif-sc-400-cjk-common.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+4E00-9FFF;
-}
-
-@font-face {
-  font-family: "Noto Serif SC";
-  src: url("/fonts/noto-serif-sc-600-latin.woff2") format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0000-00FF, U+2000-206F, U+3000-303F, U+FF00-FFEF;
-}
-
-@font-face {
-  font-family: "Noto Serif SC";
-  src: url("/fonts/noto-serif-sc-600-cjk-common.woff2") format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+4E00-9FFF;
-}
+const homeHeadCriticalCss = [
+  HOME_HEAD_CRITICAL_FONT_FACES.map(renderHomeHeadCriticalFontFace).join('\n\n'),
+  String.raw`
 
 :root {
   color-scheme: light;
@@ -148,6 +158,18 @@ a {
   color: var(--text);
   text-decoration: none;
   border-bottom: 1px solid transparent;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .skip-link {
@@ -521,7 +543,8 @@ body[data-reading="immersive"] .reader-toggle .icon-book-open {
       calc(36px + env(safe-area-inset-bottom)) calc(var(--pad-x) + env(safe-area-inset-left));
   }
 }
-`;
+`
+].join('\n\n');
 ---
 
 <BaseLayout bodyClass={homeBodyClass} deferGlobalStyles={true}>

@@ -1,4 +1,5 @@
 import { createWithBase } from '../utils/format';
+import { normalizeAdminBitsAvatarPath } from '../lib/admin-console/shared';
 
 type Tone = 'info' | 'error' | 'success';
 type ToolbarSnapshot = { value: string; start: number; end: number };
@@ -87,6 +88,11 @@ const resolvePreviewSrc = (value: string) => {
 };
 
 const normalizeAuthorName = (value: string) => value.trim();
+const normalizeAuthorAvatar = (value: string) => normalizeAdminBitsAvatarPath(value) ?? '';
+const resolveAuthorAvatarPreviewSrc = (value: string) => {
+  const normalized = normalizeAuthorAvatar(value);
+  return normalized ? withBase(normalized) : '';
+};
 
 export const initBitsDraft = (): BitsDraftController | null => {
   const dialog = document.getElementById('bits-draft-dialog') as HTMLDialogElement | null;
@@ -354,7 +360,7 @@ export const initBitsDraft = (): BitsDraftController | null => {
     if (authorAvatarEl) {
       authorAvatarEl.placeholder = defaultAuthorAvatar
         ? `默认：${defaultAuthorAvatar}`
-        : '可填相对路径或绝对 URL（留空用默认头像）';
+        : '可填相对图片路径（例如 author/avatar.webp，留空用默认头像）';
     }
   };
 
@@ -368,7 +374,7 @@ export const initBitsDraft = (): BitsDraftController | null => {
       return;
     }
     const image = document.createElement('img');
-    image.src = resolvePreviewSrc(src);
+    image.src = resolveAuthorAvatarPreviewSrc(src);
     image.alt = '';
     image.decoding = 'async';
     image.loading = 'lazy';
@@ -380,7 +386,7 @@ export const initBitsDraft = (): BitsDraftController | null => {
 
   const updateIdentityPill = () => {
     const authorName = normalizeAuthorName(authorNameEl?.value ?? '');
-    const authorAvatar = normalizeImageSrc(authorAvatarEl?.value ?? '');
+    const authorAvatar = normalizeAuthorAvatar(authorAvatarEl?.value ?? '');
     const displayName = authorName || defaultAuthorName || '匿名';
     const label = !authorName && !authorAvatar ? `${displayName}（当前）` : displayName;
     if (identityNameEl) identityNameEl.textContent = label;
@@ -618,7 +624,12 @@ export const initBitsDraft = (): BitsDraftController | null => {
     }
 
     const authorName = normalizeAuthorName(authorNameEl?.value ?? '');
-    const authorAvatar = normalizeImageSrc(authorAvatarEl?.value ?? '');
+    const authorAvatar = normalizeAdminBitsAvatarPath(authorAvatarEl?.value ?? '');
+    if (authorAvatar === undefined) {
+      setStatus('作者头像只允许相对图片路径（例如 author/avatar.webp），不要带 public/、不要以 / 开头，也不要使用 URL、..、?、#。', 'error');
+      authorAvatarEl?.focus();
+      return null;
+    }
     const customAuthorName = authorName && authorName !== defaultAuthorName ? authorName : '';
     const customAuthorAvatar = authorAvatar && authorAvatar !== defaultAuthorAvatar ? authorAvatar : '';
     const hasCustomAuthor = !!customAuthorName || !!customAuthorAvatar;

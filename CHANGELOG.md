@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project aims to follow Semanti
 
 
 ## [Unreleased]
+
+## [0.2.0] - 2026-03-13
 本次更新聚焦本地 Theme Console，方便 fork 或 clone 后更快接管站点配置。
 
 ### Added
@@ -33,10 +35,12 @@ The format is based on Keep a Changelog, and this project aims to follow Semanti
 - 修复 Theme Console 社交链接在固定平台与自定义链接之间可能出现的排序冲突；后台自动整理排序，并限制可选范围，避免保存重复排序值。
 - 修复 Theme Console 自定义社交链接保存时可能静默覆盖已有名称的问题；固定平台会自动沿用平台名，兜底平台统一显示为“网站”。
 - 修复 `/archive/` 与 `/essay/` 列表搜索在子路径部署下可能重复拼接 Base URL，导致索引加载失败的问题。
+- 修复首页在子路径部署下可能请求错误字体路径的问题；当前首屏字体声明会跟随 `BASE_URL` 输出，避免字体 404、回退或二次切换。
 - 修复 `/bits/` 单图卡片无法打开图片预览的问题，单图与多图现在共用同一套 Lightbox 交互。
 - 修复 `/bits/` 草稿对话框作者设置区域的可访问性问题，补齐展开状态语义与焦点管理。
 - 修复开发环境下 `/archive/{slug}/`、`/essay/{slug}/` 及对应分页页在 Theme Console 使用 `server` 输出模式后可能无法访问的问题。
 - 修复正文页图片预览对键盘用户不可用的问题；当前可通过键盘打开 Lightbox，关闭后焦点会返回到原触发位置。
+- 修复 Theme Console 默认语言在配置文件被手动写入非法值时仍可能透传的问题；当前会回退到安全默认值，避免输出非法 `<html lang>`。
 
 
 ## [0.1.1] - 2026-02-07

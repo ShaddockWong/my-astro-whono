@@ -60,7 +60,9 @@ jobs:
           test -f dist/rss.xml
           test -f dist/archive/rss.xml
           test -f dist/essay/rss.xml
+          test -f dist/index.html
           test -f dist/about/index.html
+          test -f dist/bits/index.html
           test -f dist/archive/markdown-guide/index.html
 
           grep -q "Sitemap: ${SITE_URL}/sitemap-index.xml" dist/robots.txt
@@ -70,6 +72,70 @@ jobs:
           grep -q "<link>${SITE_URL}/archive/markdown-guide/</link>" dist/rss.xml
           grep -q "<link>${SITE_URL}/archive/markdown-guide/</link>" dist/archive/rss.xml
           grep -q "<link>${SITE_URL}/archive/markdown-guide/</link>" dist/essay/rss.xml
+
+          node --input-type=module <<'EOF'
+          import { existsSync, readFileSync } from 'node:fs';
+
+          const expect = (condition, message) => {
+            if (!condition) {
+              console.error(message);
+              process.exit(1);
+            }
+          };
+
+          const indexHtml = readFileSync('dist/index.html', 'utf8');
+          expect(
+            /<h1 class="sr-only">[^<]+<\/h1>/.test(indexHtml),
+            'Homepage hidden H1 is missing from dist/index.html'
+          );
+          expect(
+            /\.sr-only\s*\{/.test(indexHtml),
+            'Homepage critical CSS is missing the .sr-only rule'
+          );
+          expect(
+            /<link(?=[^>]+rel="preload")(?=[^>]+href="[^"]*global[^"]*")(?=[^>]+as="style")[^>]*>/.test(indexHtml),
+            'Homepage is no longer preloading the deferred global stylesheet'
+          );
+          expect(
+            /<link(?=[^>]+rel="stylesheet")(?=[^>]+href="[^"]*global[^"]*")(?=[^>]+media="print")(?=[^>]+onload="this\.onload=null;this\.media='all'")[^>]*>/.test(indexHtml),
+            'Homepage is no longer using the deferGlobalStyles media-swap stylesheet path'
+          );
+
+          const pageSettings = existsSync('src/data/settings/page.json')
+            ? JSON.parse(readFileSync('src/data/settings/page.json', 'utf8'))
+            : null;
+          const { site } = await import('./site.config.mjs');
+          const rawAvatar = pageSettings?.bits?.defaultAuthor?.avatar ?? site.authorAvatar ?? 'author/avatar.webp';
+          expect(
+            typeof rawAvatar === 'string' && rawAvatar.trim().length > 0,
+            'Bits default author avatar is missing from page settings / site config'
+          );
+
+          const normalizedAvatar = rawAvatar.trim().replace(/\\/g, '/').replace(/^\.\/+/, '');
+          const hasInvalidAvatarPath =
+            normalizedAvatar.startsWith('/') ||
+            normalizedAvatar.startsWith('//') ||
+            normalizedAvatar.startsWith('public/') ||
+            /^[A-Za-z]+:\/\//.test(normalizedAvatar) ||
+            /(^|\/)\.\.(?:\/|$)/.test(normalizedAvatar) ||
+            normalizedAvatar.includes('?') ||
+            normalizedAvatar.includes('#');
+
+          expect(
+            !hasInvalidAvatarPath,
+            `Bits default author avatar must stay a relative public/** image path: ${rawAvatar}`
+          );
+          expect(
+            /\.(avif|gif|jpe?g|png|svg|webp)$/i.test(normalizedAvatar),
+            `Bits default author avatar must point to an image file: ${rawAvatar}`
+          );
+
+          const avatarFilePath = `public/${normalizedAvatar}`;
+          expect(
+            existsSync(avatarFilePath),
+            `Bits default author avatar points to a missing file: ${avatarFilePath}`
+          );
+          EOF
 
           if grep -q "/admin/" dist/sitemap-0.xml; then
             echo "Admin route leaked into sitemap"

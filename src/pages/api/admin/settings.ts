@@ -36,12 +36,14 @@ import {
   ADMIN_SOCIAL_CUSTOM_LIMIT,
   ADMIN_SOCIAL_PRESET_IDS,
   ADMIN_X_HOSTS,
+  getAdminBitsAvatarLocalFilePath,
   getAdminSocialOrderIssues,
   getAdminHeroImageLocalFilePath,
   getAdminFooterStartYearMax,
   isAdminHomeIntroLinkKey,
   isAdminSidebarDividerVariant,
   isAdminNavId,
+  normalizeAdminBitsAvatarPath,
   normalizeAdminHeroImageSrc,
   normalizeAdminSocialIconKey
 } from '../../../lib/admin-console/shared';
@@ -244,14 +246,19 @@ const toEmailAddress = (value: unknown): string | null | undefined => {
   return ADMIN_EMAIL_RE.test(normalized) ? normalized : undefined;
 };
 
-const validateRelativeAvatarPath = (scope: string, value: string, errors: string[]): void => {
-  if (!value) return;
-  if (value.startsWith('/')) {
-    errors.push(`${scope} 必须是相对路径，不能以 / 开头`);
+const validateBitsAvatarPath = (scope: string, value: string, errors: string[]): string => {
+  const normalized = normalizeAdminBitsAvatarPath(value);
+  if (normalized === undefined) {
+    errors.push(`${scope} 只允许相对图片路径（例如 author/avatar.webp），不要带 public/、不要以 / 开头，也不要包含 URL、..、?、#`);
+    return value;
   }
-  if (/^[A-Za-z]+:\/\//.test(value)) {
-    errors.push(`${scope} 当前仅允许相对路径，不允许 URL`);
+
+  const localFilePath = getAdminBitsAvatarLocalFilePath(normalized);
+  if (localFilePath && !hasProjectFile(localFilePath)) {
+    errors.push(`${scope} 指向的本地文件不存在：${localFilePath}`);
   }
+
+  return normalized;
 };
 
 const hasProjectFile = (relativePath: string): boolean =>
@@ -896,8 +903,11 @@ const parsePatch = (
                 if (value === undefined) {
                   errors.push('page.bits.defaultAuthor.avatar 必须是字符串');
                 } else {
-                  validateRelativeAvatarPath('page.bits.defaultAuthor.avatar', value, errors);
-                  nextPage.bits.defaultAuthor.avatar = value;
+                  nextPage.bits.defaultAuthor.avatar = validateBitsAvatarPath(
+                    'page.bits.defaultAuthor.avatar',
+                    value,
+                    errors
+                  );
                 }
               }
             }

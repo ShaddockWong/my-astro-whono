@@ -116,7 +116,9 @@ If execution policy blocks `npm.ps1`, use one of the following:
 
 - Site config: `site.config.mjs`
 - Content collections: `src/content.config.ts`
-- Style entry: `src/styles/global.css`
+- Shared style entry: `src/styles/global.css`
+- Page / scene style entries: `src/styles/home.css`, `src/styles/about.css`, `src/styles/memo.css`, `src/styles/article.css`, `src/styles/bits-page.css`
+- Admin style entry: `src/styles/components/admin.css` (used only by `/admin`)
 
 ### Theme Console (`/admin`)
 
@@ -226,7 +228,7 @@ images:                         # Optional: multi-image list (dimensions reduce 
 Author info (on `/bits/` only):
 
 - Default author and avatar are read from Theme Console via `page.bits.defaultAuthor`; if `src/data/settings/page.json` does not exist yet, they fall back to `site.author` / `site.authorAvatar` in `site.config.mjs`
-- `authorAvatar` should be a relative path only (no `public/`, no leading `/`), for example: `author/avatar.webp`
+- `authorAvatar` should be a relative image path only (no `public/`, no leading `/`), for example: `author/avatar.webp`; the file must actually exist under `public/**`
 - Per-bit overrides are supported via `author` in frontmatter:
 
 ```yaml
@@ -234,6 +236,7 @@ author:
   name: Alice
   avatar: author/alice.webp
 ```
+- Per-bit `author.avatar` follows the same rule as the default avatar: it must be a relative image path pointing to an existing file under `public/**`
 
 - If the avatar is missing or fails to load, it automatically falls back to an initial-based avatar.
 
