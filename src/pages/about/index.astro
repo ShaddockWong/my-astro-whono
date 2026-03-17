@@ -72,9 +72,11 @@ const contactItems: ContactItem[] = [
     }
   </div>
   <p class="about-intro-line">
-    Whono是一个基于 Astro 的极简双栏写作主题：干净、快速、为阅读而设计。<br />
-    内容以 Markdown 写作，支持暗色模式、代码高亮、RSS 与沉浸式阅读，适合作为个人写作与轻量内容发布的起点。<br />
-    主题已开源维护，如果你有改进建议或想一起完善，欢迎创建 <a href="https://github.com/cxro/astro-whono/issues">Issue</a> 交流。
+      你好，陌生人。很高兴你能点进这个页面。这意味着，你不仅仅是一个路过流量的数字，你可能也是一个愿意停下来思考的人。<br><br>
+      我是 <strong>[柚子]</strong>，「枕码眠山」的主人。建立这个博客的初衷很简单：<strong>我害怕遗忘</strong>——害怕遗忘那些调试了三天三夜终于解决的 Bug 背后的逻辑美感；害怕遗忘在某次徒步中，看到云海翻涌时内心的震撼；更害怕遗忘那个曾经对世界充满好奇、不愿随波逐流的自己。<br><br>
+      在这里，你会看到我如何试图将理性的代码与感性的生活缝合在一起。有时候，我会谈论架构设计的权衡，就像谈论人生选择的得失；有时候，我会描写山间的一棵松树，就像分析一段优雅的算法。<br><br>
+      这不完美，但这很真实。正如我在文章里写过的：“写作是为了发现漏洞。”你的质疑，或许正是帮我补全拼图的最后一块。<br><br>
+      如果你也喜欢在深夜思考，喜欢在代码与自然间穿梭，不妨把博客加入书签，或者仅仅是看看它。让我们在这个快节奏的世界里，慢慢地走，深深地想。
   </p>
   <h2 class="section-title about-section-title">栏目指引</h2>
   <div class="site-guide">
@@ -150,8 +152,8 @@ const contactItems: ContactItem[] = [
   <h2 class="section-title about-section-title">常见问题</h2>
   <section class="qa-list" aria-label="常见问题">
     <details class="qa-item">
-      <summary class="qa-question"><span class="qa-icon" aria-hidden="true">Q</span>为什么我部署后会看到 SITE_URL is not set 警告？</summary>
-      <p class="qa-answer">因为没配置生产域名。未设置时会用占位域名，<code>canonical</code>/<code>og:url</code>/<code>sitemap</code>/<code>robots</code> 会不完整。部署平台里环境变量中添加 <code>SITE_URL=https://你的域名</code>，重新构建即可。</p>
+      <summary class="qa-question"><span class="qa-icon" aria-hidden="true">Q</span>博客用的是什么主题呀？</summary>
+      <p class="qa-answer">Whono，一个基于 Astro 的静态博客主题，设计简洁、功能完善。它支持 Markdown 写作、自定义配置、响应式设计等。你可以在 <a href="https://github.com/cxro/astro-whono">GitHub</a> 上查看源代码。</p>
     </details>
     <details class="qa-item">
       <summary class="qa-question"><span class="qa-icon" aria-hidden="true">Q</span>为什么有的文章没出现在归档里？</summary>
@@ -172,7 +174,7 @@ const contactItems: ContactItem[] = [
       <>
         <h2 class="section-title about-section-title">联系与订阅</h2>
         <section class="contact-block" aria-label="联系方式">
-          <p class="contact-note">如果你有问题、建议，或想订阅更新，可以通过以下方式联系。</p>
+          <p class="contact-note">关于连接，或仅仅是路过。</p>
           <ul class="contact-list">
             {contactItems.map((item) => (
               <li>
