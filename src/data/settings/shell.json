@@ -1,10 +1,10 @@
 {
-  "brandTitle": "Whono",
-  "quote": "A minimal Astro theme\nfor essays, notes, and docs.\nDesigned for reading,\nopen-source.",
+  "brandTitle": "枕码眠山",
+  "quote": "所谓「枕码」，是入世的专注；所谓「眠山」，是出世的清醒。\n枕码眠山不仅仅是一个博客，更是一种生活态度的投射。",
   "nav": [
     {
       "id": "essay",
-      "label": "随笔",
+      "label": "文章",
       "ornament": "·",
       "visible": true,
       "order": 1

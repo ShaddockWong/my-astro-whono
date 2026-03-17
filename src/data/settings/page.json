@@ -1,6 +1,6 @@
 {
   "essay": {
-    "title": "随笔",
+    "title": "文章",
     "subtitle": "随笔与杂记"
   },
   "archive": {
@@ -11,7 +11,7 @@
     "title": "絮语",
     "subtitle": "生活不只是长篇",
     "defaultAuthor": {
-      "name": "Whono",
+      "name": "柚子",
       "avatar": "author/avatar.webp"
     }
   },

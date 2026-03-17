@@ -1,5 +1,5 @@
 {
-  "introLead": "这是一个开源写作主题与示例内容库:包含 随笔/essay、小记/memo、归档/archive 与 絮语/bits，使用与配置请见 README 。",
+  "introLead": "代码是理性的积木，山林是感性的归宿。\n我们在 Bug 与 Feature 之间穿梭，也在山川与湖海之间驻足。\n枕着代码入梦，醒来已是青山绿水。",
   "introMore": "更多文章请访问",
   "introMoreLinks": [
     "archive",
@@ -9,5 +9,5 @@
   "showIntroMore": true,
   "heroPresetId": "default",
   "heroImageSrc": null,
-  "heroImageAlt": "Whono theme preview"
+  "heroImageAlt": "来吧 来吧"
 }
