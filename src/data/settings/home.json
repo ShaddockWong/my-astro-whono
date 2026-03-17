@@ -2,8 +2,7 @@
   "introLead": "代码是理性的积木，山林是感性的归宿。\n我们在 Bug 与 Feature 之间穿梭，也在山川与湖海之间驻足。\n枕着代码入梦，醒来已是青山绿水。",
   "introMore": "更多文章请访问",
   "introMoreLinks": [
-    "archive",
-    "essay"
+    "archive"
   ],
   "showIntroLead": true,
   "showIntroMore": true,
