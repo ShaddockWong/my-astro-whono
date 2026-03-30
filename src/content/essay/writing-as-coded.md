@@ -2,7 +2,7 @@
 title: 代码的缝隙
 description: 关于代码和生活的一些思考
 date: 2026-03-17
-tags: ["写作","代码", "思考"]
+tags: ["写作", "代码", "思考"]
 draft: false
 ---
 
